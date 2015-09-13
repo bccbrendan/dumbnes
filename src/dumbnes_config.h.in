@@ -1,0 +1,3 @@
+// the configured options and settings for Dumbnes
+#define Dumbnes_VERSION_MAJOR @Dumbnes_VERSION_MAJOR@
+#define Dumbnes_VERSION_MINOR @Dumbnes_VERSION_MINOR@

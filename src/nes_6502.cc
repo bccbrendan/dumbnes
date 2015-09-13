@@ -6,9 +6,9 @@
 
 #include "nes_6502.h"
 
-Nes6502::Nes6502(IMemory *memory)
+Nes6502::Nes6502(const std::shared_ptr<IMemory>& memory)
+    :_memory(memory)
 {
-    _memory = memory;
 }
 
 Nes6502::~Nes6502(void)

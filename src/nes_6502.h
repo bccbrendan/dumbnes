@@ -29,7 +29,7 @@ C  =  CARRY. Set if the add produced a carry,
       or if the subtraction produced a borrow. 
       Also holds bits after a logical shift.
 */
-enum SrCodes
+enum class SrCodes
 {
     SR_C = 0x1,
     SR_Z = 0x2,
@@ -43,7 +43,7 @@ enum SrCodes
 class Nes6502
 {
 protected:
-    IMemory *_memory;
+    std::shared_ptr<IMemory> _memory;
     /* registers */
     uint8_t _regA; /*accumulator*/
     uint8_t _regX; /*index*/
@@ -53,7 +53,7 @@ protected:
     uint16_t _regPC; /*program counter*/
 
 public:
-    Nes6502(IMemory *memory);
+    Nes6502(const std::shared_ptr<IMemory>& memory);
     ~Nes6502(void);
     void Reset (void);
     int Step(int num_steps);
