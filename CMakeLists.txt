@@ -21,9 +21,11 @@ include_directories ("${PROJECT_BINARY_DIR}"
 
 # list source files
 set (SOURCE ${SOURCE}
+    ${PROJECT_SOURCE_DIR}/op_info.cc
     ${PROJECT_SOURCE_DIR}/dumbnes.cc
     ${PROJECT_SOURCE_DIR}/flat_memory.cc
     ${PROJECT_SOURCE_DIR}/nes_6502.cc
+    ${PROJECT_SOURCE_DIR}/nes_6502_opcodes.cc
     )
 
 #add the executable

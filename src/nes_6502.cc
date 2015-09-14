@@ -6,23 +6,27 @@
 
 #include "nes_6502.h"
 
-Nes6502::Nes6502(const std::shared_ptr<IMemory>& memory)
+dumbnes::Nes6502::Nes6502(const std::shared_ptr<IMemory>& memory)
     :_memory(memory)
 {
 }
 
-Nes6502::~Nes6502(void)
+dumbnes::Nes6502::~Nes6502(void)
 {
 }
 
-void Nes6502::Reset (void)
+void dumbnes::Nes6502::Reset (void)
 {
 }
 
-int Nes6502::Step(int num_steps)
+int dumbnes::Nes6502::Step(void)
+{
+    auto next_op = dumbnes::OpInfo::Decode((*_memory)[_regPC]);
+    std::cout << "PC[0x" << std::hex << _regPC << "] "
+        << next_op << std::endl;
+}
+
+int dumbnes::Nes6502::Interrupt( /*TODO code?*/)
 {
 }
 
-int Nes6502::Interrupt( /*TODO code?*/)
-{
-}

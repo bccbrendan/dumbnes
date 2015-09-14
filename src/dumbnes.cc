@@ -16,9 +16,12 @@ int main(int argc, char* argv[])
              << "." << Dumbnes_VERSION_MINOR << endl;
         return 1;
     }
-    auto mem = std::make_shared<FlatMemory>();
-    auto cpu = std::make_shared<Nes6502>(mem);
+    auto mem = std::make_shared<dumbnes::FlatMemory>();
+    auto cpu = std::make_shared<dumbnes::Nes6502>(mem);
     std::cout << "Resetting CPU regs!" << std::endl;
     cpu->Reset();
+    (*mem)[0x0] = 0xa9; // LDA 
+    (*mem)[0x1] = 0xc0; // 
+    cpu->Step();
     std::cout << "Goodbye!" << std::endl;
 }

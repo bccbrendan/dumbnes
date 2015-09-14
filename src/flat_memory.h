@@ -7,8 +7,13 @@
  * brendan long
  * Feb 2015
  */
+#ifndef __FLAT_MEMORY_H
+#define __FLAT_MEMORY_H
 
 #include "dumbnes_includes.h"
+
+namespace dumbnes
+{
 
 class FlatMemory : public IMemory
 {
@@ -21,3 +26,6 @@ public:
     virtual void DumpBlock(/*TODO*/) override ;
     virtual uint8_t& operator[](const uint16_t addr) override;
 };
+
+} // namespace dumbnes
+#endif /* __FLAT_MEMORY_H */

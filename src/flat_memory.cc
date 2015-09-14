@@ -10,19 +10,19 @@
 
 #include "dumbnes_includes.h"
 
-FlatMemory::FlatMemory(void)
+dumbnes::FlatMemory::FlatMemory(void)
 {
 }
 
-void FlatMemory::InitializeBlock(void /*TODO*/)
+void dumbnes::FlatMemory::InitializeBlock(void /*TODO*/)
 {
 }
 
-void FlatMemory::DumpBlock(/*TODO*/)
+void dumbnes::FlatMemory::DumpBlock(/*TODO*/)
 {
 }
 
-uint8_t& FlatMemory::operator[](const uint16_t addr)
+uint8_t& dumbnes::FlatMemory::operator[](const uint16_t addr)
 {
     return _contents[addr];
 }

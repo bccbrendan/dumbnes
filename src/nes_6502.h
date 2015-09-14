@@ -9,6 +9,9 @@
  */
 #include "dumbnes_includes.h"
 
+namespace dumbnes
+{
+
 /* Status Register Codes
 bit ->   7 0
 +---+---+---+---+---+---+---+---+
@@ -56,8 +59,12 @@ public:
     Nes6502(const std::shared_ptr<IMemory>& memory);
     ~Nes6502(void);
     void Reset (void);
-    int Step(int num_steps);
+    int Step(void);
     int Interrupt( /*TODO code?*/);
+
 };
 
+} // namespace dumbnes
+
 #endif /*__NES_6502_H*/
+
