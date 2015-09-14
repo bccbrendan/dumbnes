@@ -23,5 +23,11 @@ int main(int argc, char* argv[])
     (*mem)[0x0] = 0xa9; // LDA 
     (*mem)[0x1] = 0xc0; // 
     cpu->Step();
+    std::cout << std::hex
+              << "Cpu state dump: << " << std::endl
+              << " PC: 0x" << cpu->PC() << std::endl
+              << "  A: 0x" << cpu->A() << std:: endl
+              ;
+
     std::cout << "Goodbye!" << std::endl;
 }

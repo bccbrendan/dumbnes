@@ -12,35 +12,42 @@
 namespace dumbnes
 {
 
+class OpInfo;
+
 /* Status Register Codes
 bit ->   7 0
 +---+---+---+---+---+---+---+---+
 | N | V |   | B | D | I | Z | C |  <-- flag, 0/1 = reset/set
 +---+---+---+---+---+---+---+---+
-
-N  =  NEGATIVE. Set if bit 7 of the accumulator is set.
-V  =  OVERFLOW. Set if the addition of two like-signed numbers 
-      or the subtraction of two unlike-signed numbers 
-      produces a result greater than +127 or less than -128.
-B  =  BRK COMMAND. Set if an interrupt caused by a BRK, 
-      reset if caused by an external interrupt.
-D  =  DECIMAL MODE. Set if decimal mode active.
-I  =  IRQ DISABLE.  Set if maskable interrupts are disabled.
-Z  =  ZERO.  Set if the result of the last operation
-      (load/inc/dec/add/sub) was zero.
-C  =  CARRY. Set if the add produced a carry, 
-      or if the subtraction produced a borrow. 
-      Also holds bits after a logical shift.
 */
-enum class SrCodes
+enum SrCode
 {
-    SR_C = 0x1,
-    SR_Z = 0x2,
-    SR_I = 0x4,
-    SR_D = 0x8,
-    SR_B = 0x10,
-    SR_V = 0x40,
-    SR_N = 0x80
+    /* CARRY. Set if the add produced a carry,
+     * or if the subtraction produced a borrow. 
+     * Also holds bits after a logical shift.*/
+    C = 0x1,
+
+    /* ZERO.  Set if the result of the last operation
+     * (load/inc/dec/add/sub) was zero. */
+    Z = 0x2,
+
+    /* IRQ DISABLE.  Set if maskable interrupts are disabled. */
+    I = 0x4,
+
+    /* DECIMAL MODE. Set if decimal mode active. */
+    D = 0x8,
+
+    /* BRK COMMAND. Set if an interrupt caused by a BRK, 
+     * reset if caused by an external interrupt.*/
+    B = 0x10,
+
+    /* OVERFLOW. Set if the addition of two like-signed numbers 
+     * or the subtraction of two unlike-signed numbers 
+     *  produces a result greater than +127 or less than -128.*/
+    V = 0x40,
+
+    /* Sign. Set if bit 7 of the accumulator is set. */
+    S = 0x80
 };
 
 class Nes6502
@@ -61,7 +68,14 @@ public:
     void Reset (void);
     int Step(void);
     int Interrupt( /*TODO code?*/);
+    inline uint16_t PC(void) const {return _regPC;}
+    inline uint16_t A(void) const {return _regA;}
 
+private:
+    uint16_t FetchOperand(const OpMode& opmode);
+    void ProcessOp(const OpInfo& op);
+    void CheckSr_S(uint8_t result);
+    void CheckSr_Z(uint8_t result);
 };
 
 } // namespace dumbnes

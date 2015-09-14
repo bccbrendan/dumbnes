@@ -7,10 +7,10 @@
 #include <map>
 #include "dumbnes_config.h"
 #include "memory_interface.h"
+#include "nes_6502_opcodes.h"
 #include "nes_memory.h"
 #include "flat_memory.h"
-#include "nes_6502.h"
-#include "nes_6502_opcodes.h"
 #include "op_info.h"
+#include "nes_6502.h"
 
 #endif /* __DUMBNES_INCLUDES_H */

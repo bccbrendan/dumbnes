@@ -2,7 +2,6 @@
 #define __OP_INFO_H
 
 #include "dumbnes_includes.h"
-
 namespace dumbnes
 {
 using Opcode = uint8_t;
