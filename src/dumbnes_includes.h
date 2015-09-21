@@ -5,6 +5,8 @@
 #include <iostream>
 #include <memory>
 #include <map>
+#include <sstream>
+#include <string>
 #include "dumbnes_config.h"
 #include "memory_interface.h"
 #include "nes_6502_opcodes.h"

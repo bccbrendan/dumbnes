@@ -13,6 +13,7 @@ namespace dumbnes
 {
 
 class OpInfo;
+class OpResult;
 
 /* Status Register Codes
 bit ->   7 0
@@ -44,14 +45,16 @@ const uint8_t SR_S = 0x8;
 class Nes6502
 {
 protected:
-    std::shared_ptr<IMemory> _memory;
+    std::shared_ptr<IMemory> memory_;
     /* registers */
-    uint8_t _regA; /*accumulator*/
-    uint8_t _regX; /*index*/
-    uint8_t _regY; /*index*/
-    uint8_t _regSR; /*status*/
-    uint8_t _regSP; /*stack pointer*/
-    uint16_t _regPC; /*program counter*/
+    uint8_t reg_a_; /*accumulator*/
+    uint8_t reg_x_; /*index*/
+    uint8_t reg_y_; /*index*/
+    uint8_t reg_sr_; /*status*/
+    uint8_t reg_sp_; /*stack pointer*/
+    uint16_t reg_pc_; /*program counter*/
+
+    size_t cycles_run_; /* incremented as program runs */
 
 public:
     Nes6502(const std::shared_ptr<IMemory>& memory);
@@ -59,19 +62,85 @@ public:
     void Reset (void);
     int Step(void);
     int Interrupt( /*TODO code?*/);
-    inline uint16_t PC(void) const {return _regPC;}
-    inline uint16_t A(void) const {return _regA;}
+    inline uint16_t PC(void) const {return reg_pc_;}
+    inline uint16_t A(void) const {return reg_a_;}
 
 private:
     uint16_t FetchOperand(const OpMode& opmode, IMemory& mem);
     uint16_t DecodeAddress(const OpMode& opmode, IMemory& mem);
+    bool IsBranchTaken(const OpInfo& op) const;
     void ProcessOp(const OpInfo& op);
+
+    /* given the operation results (branches taken?)
+     * compute the number of cycles the operation would have taken
+     */
+    size_t CyclesTaken(const OpInfo& op, const OpResult& result);
+
     
     Nes6502& SetStatus(uint8_t bit, bool val);
     bool GetStatus(uint8_t bit) const;
-};
 
+    /* opcodes */
+    void ProcessADC(const OpInfo& op, OpResult& result);
+    void ProcessAND(const OpInfo& op, OpResult& result);
+    void ProcessASL(const OpInfo& op, OpResult& result);
+    void ProcessBCC(const OpInfo& op, OpResult& result);
+    void ProcessBCS(const OpInfo& op, OpResult& result);
+    void ProcessBEQ(const OpInfo& op, OpResult& result);
+    void ProcessBIT(const OpInfo& op, OpResult& result);
+    void ProcessBMI(const OpInfo& op, OpResult& result);
+    void ProcessBNE(const OpInfo& op, OpResult& result);
+    void ProcessBPL(const OpInfo& op, OpResult& result);
+    void ProcessBRK(const OpInfo& op, OpResult& result);
+    void ProcessBVC(const OpInfo& op, OpResult& result);
+    void ProcessBVS(const OpInfo& op, OpResult& result);
+    void ProcessCLC(const OpInfo& op, OpResult& result);
+    void ProcessCLD(const OpInfo& op, OpResult& result);
+    void ProcessCLI(const OpInfo& op, OpResult& result);
+    void ProcessCLV(const OpInfo& op, OpResult& result);
+    void ProcessCMP(const OpInfo& op, OpResult& result);
+    void ProcessCPX(const OpInfo& op, OpResult& result);
+    void ProcessCPY(const OpInfo& op, OpResult& result);
+    void ProcessDEC(const OpInfo& op, OpResult& result);
+    void ProcessDEX(const OpInfo& op, OpResult& result);
+    void ProcessDEY(const OpInfo& op, OpResult& result);
+    void ProcessEOR(const OpInfo& op, OpResult& result);
+    void ProcessINC(const OpInfo& op, OpResult& result);
+    void ProcessINX(const OpInfo& op, OpResult& result);
+    void ProcessINY(const OpInfo& op, OpResult& result);
+    void ProcessJMP(const OpInfo& op, OpResult& result);
+    void ProcessJSR(const OpInfo& op, OpResult& result);
+    void ProcessLDA(const OpInfo& op, OpResult& result);
+    void ProcessLDX(const OpInfo& op, OpResult& result);
+    void ProcessLDY(const OpInfo& op, OpResult& result);
+    void ProcessLSR(const OpInfo& op, OpResult& result);
+    void ProcessNOP(const OpInfo& op, OpResult& result);
+    void ProcessORA(const OpInfo& op, OpResult& result);
+    void ProcessPHA(const OpInfo& op, OpResult& result);
+    void ProcessPHP(const OpInfo& op, OpResult& result);
+    void ProcessPLA(const OpInfo& op, OpResult& result);
+    void ProcessPLP(const OpInfo& op, OpResult& result);
+    void ProcessROL(const OpInfo& op, OpResult& result);
+    void ProcessROR(const OpInfo& op, OpResult& result);
+    void ProcessRTI(const OpInfo& op, OpResult& result);
+    void ProcessRTS(const OpInfo& op, OpResult& result);
+    void ProcessSBC(const OpInfo& op, OpResult& result);
+    void ProcessSEC(const OpInfo& op, OpResult& result);
+    void ProcessSED(const OpInfo& op, OpResult& result);
+    void ProcessSEI(const OpInfo& op, OpResult& result);
+    void ProcessSTA(const OpInfo& op, OpResult& result);
+    void ProcessSTX(const OpInfo& op, OpResult& result);
+    void ProcessSTY(const OpInfo& op, OpResult& result);
+    void ProcessTAX(const OpInfo& op, OpResult& result);
+    void ProcessTAY(const OpInfo& op, OpResult& result);
+    void ProcessTSX(const OpInfo& op, OpResult& result);
+    void ProcessTXA(const OpInfo& op, OpResult& result);
+    void ProcessTXS(const OpInfo& op, OpResult& result);
+    void ProcessTYA(const OpInfo& op, OpResult& result);
+
+    void HelpProcessBranch(const OpInfo& op, OpResult& result);
+};
 } // namespace dumbnes
 
-#endif /*__NES_6502_H*/
+#endif
 
