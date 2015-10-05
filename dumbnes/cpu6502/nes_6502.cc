@@ -260,6 +260,21 @@ void Nes6502::HelpProcessBranch(const OpInfo& op,
     }
 }
 
+void Nes6502::PushByte(uint8_t b)
+{
+    (*memory_)[reg_sp_] = b;
+    reg_sp_++;
+}
+
+uint8_t Nes6502::PopByte(void)
+{
+    return (*memory_)[reg_sp_--];
+}
+
+
+
+
+
 /******************************************************************************/
 /* Below here, it's all opcode handlers                                       */
 /******************************************************************************/
@@ -396,31 +411,79 @@ void Nes6502::ProcessCPY(const OpInfo& op, OpResult& result)
 }
 
 void Nes6502::ProcessDEC(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    auto target_address = DecodeAddress(op.mode, *memory_);
+    auto dec_result =  (*memory_)[target_address] - 1;
+    SetStatus(SR_Z, (dec_result == 0));
+    SetStatus(SR_S, (ByteNegative(dec_result)));
+    (*memory_)[target_address] = dec_result;
 }
+
 void Nes6502::ProcessDEX(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    auto dec_result =  reg_x_ - 1;
+    SetStatus(SR_Z, (dec_result == 0));
+    SetStatus(SR_S, (ByteNegative(dec_result)));
+    reg_x_ = dec_result;
 }
+
 void Nes6502::ProcessDEY(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    auto dec_result =  reg_y_ - 1;
+    SetStatus(SR_Z, (dec_result == 0));
+    SetStatus(SR_S, (ByteNegative(dec_result)));
+    reg_y_ = dec_result;
 }
+
 void Nes6502::ProcessEOR(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    auto operand = FetchOperand(op.mode, *memory_);
+    auto eor_result = reg_a_ ^ operand;
+    SetStatus(SR_S, ByteNegative(eor_result));
+    SetStatus(SR_Z, eor_result == reg_a_);
+    reg_a_ = eor_result;
 }
+
 void Nes6502::ProcessINC(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    auto target_address = DecodeAddress(op.mode, *memory_);
+    auto inc_result =  (*memory_)[target_address] + 1;
+    SetStatus(SR_Z, (inc_result == 0));
+    SetStatus(SR_S, (ByteNegative(inc_result)));
+    (*memory_)[target_address] = inc_result;
 }
+
 void Nes6502::ProcessINX(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    auto inc_result =  reg_x_ + 1;
+    SetStatus(SR_Z, (inc_result == 0));
+    SetStatus(SR_S, (ByteNegative(inc_result)));
+    reg_x_ = inc_result;
 }
+
 void Nes6502::ProcessINY(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    auto inc_result =  reg_y_ + 1;
+    SetStatus(SR_Z, (inc_result == 0));
+    SetStatus(SR_S, (ByteNegative(inc_result)));
+    reg_y_ = inc_result;
 }
+
 void Nes6502::ProcessJMP(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    auto operand = FetchOperand(op.mode, *memory_);
+    result.next_pc = operand;
 }
+
 void Nes6502::ProcessJSR(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    auto operand = FetchOperand(op.mode, *memory_);
+    auto return_address = result.next_pc - 1;
+    result.next_pc = operand;
+    PushByte((return_address & 0xF0) >> 8); // msb first
+    PushByte(return_address & 0x0F);
+    // TODO push status reg?
+    PushByte(reg_sr_);
 }
 
 void Nes6502::ProcessLDA(const OpInfo& op, OpResult& result)
@@ -476,10 +539,17 @@ void Nes6502::ProcessROR(const OpInfo& op, OpResult& result)
 }
 void Nes6502::ProcessRTI(const OpInfo& op, OpResult& result)
 {//TODO
+
 }
+
 void Nes6502::ProcessRTS(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    reg_sr_ = PopByte(); // TODO pop status reg?
+    uint16_t return_address = PopByte();
+    return_address |= (PopByte() << 8);
+    result.next_pc = return_address;
 }
+
 void Nes6502::ProcessSBC(const OpInfo& op, OpResult& result)
 {//TODO
 }
@@ -504,23 +574,41 @@ void Nes6502::ProcessSTX(const OpInfo& op, OpResult& result)
 void Nes6502::ProcessSTY(const OpInfo& op, OpResult& result)
 {//TODO
 }
+
 void Nes6502::ProcessTAX(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    reg_x_ = reg_a_;
+    SetStatus(SR_S, ByteNegative(reg_x_));
+    SetStatus(SR_Z, reg_y_ == 0);
 }
+
 void Nes6502::ProcessTAY(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    reg_y_ = reg_a_;
+    SetStatus(SR_S, ByteNegative(reg_y_));
+    SetStatus(SR_Z, reg_y_ == 0);
 }
+
 void Nes6502::ProcessTSX(const OpInfo& op, OpResult& result)
 {//TODO
 }
+
 void Nes6502::ProcessTXA(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    reg_a_ = reg_x_;
+    SetStatus(SR_S, ByteNegative(reg_a_));
+    SetStatus(SR_Z, reg_a_ == 0);
 }
+
 void Nes6502::ProcessTXS(const OpInfo& op, OpResult& result)
 {//TODO
 }
+
 void Nes6502::ProcessTYA(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    reg_a_ = reg_y_;
+    SetStatus(SR_S, ByteNegative(reg_a_));
+    SetStatus(SR_Z, reg_a_ == 0);
 }
 
 }}

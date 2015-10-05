@@ -82,10 +82,12 @@ private:
      * compute the number of cycles the operation would have taken
      */
     size_t CyclesTaken(const OpInfo& op, const OpResult& result);
-
     
     Nes6502& SetStatus(uint8_t bit, bool val);
     bool GetStatus(uint8_t bit) const;
+
+    void PushByte(uint8_t b);
+    uint8_t PopByte(void);
 
     /* opcodes */
     void ProcessADC(const OpInfo& op, OpResult& result);
