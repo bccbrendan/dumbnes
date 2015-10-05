@@ -10,6 +10,7 @@
 
 #include "dumbnes_includes.h"
 #if 0
+namespace dumbnes { namespace memory
 class NesMemory : public IMemory
 {
 public:
@@ -18,6 +19,8 @@ public:
     virtual void DumpBlock(/*TODO*/) = 0;
     virtual uint8_t& operator[](const uint16_t addr) = 0; 
     };
+
+}}  // namespace dumbnes::memory
 #endif
 #endif /* __NES_MEMORY_H */
 

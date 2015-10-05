@@ -3,7 +3,7 @@ cmake_minimum_required (VERSION 2.8)
 project (Dumbnes)
 add_compile_options(-std=c++14)
 # set up project directory structure
-set (PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}/src")
+set (PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}/dumbnes")
 set (PROJECT_BINARY_DIR "${PROJECT_BINARY_DIR}/bin")
 
 # project version number
@@ -21,18 +21,20 @@ include_directories ("${PROJECT_BINARY_DIR}"
 
 # list source files
 set (SOURCE ${SOURCE}
-    ${PROJECT_SOURCE_DIR}/op_info.cc
-    ${PROJECT_SOURCE_DIR}/dumbnes.cc
-    ${PROJECT_SOURCE_DIR}/flat_memory.cc
-    ${PROJECT_SOURCE_DIR}/nes_6502.cc
-    ${PROJECT_SOURCE_DIR}/nes_6502_opcodes.cc
+    ${PROJECT_SOURCE_DIR}/memory/flat_memory.cc
+    ${PROJECT_SOURCE_DIR}/cpu6502/nes_6502.cc
+    ${PROJECT_SOURCE_DIR}/cpu6502/op_result.cc
+    ${PROJECT_SOURCE_DIR}/opcodes/op_info.cc
+    ${PROJECT_SOURCE_DIR}/opcodes/opcodes.cc
+    ${PROJECT_SOURCE_DIR}/main.cc
+    ${PROJECT_SOURCE_DIR}/assembler/assembler.cc
     )
 
 #add the executable
-add_executable (Dumbnes ${SOURCE})
+add_executable (dumbnes_emu ${SOURCE})
 
 # add the install targets
-install (TARGETS Dumbnes DESTINATION bin)
+install (TARGETS dumbnes_emu DESTINATION bin)
 install (FILES "${PROJECT_BINARY_DIR}/dumbnes_config.h"
          DESTINATION include)
 

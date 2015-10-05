@@ -6,8 +6,10 @@
 
 #include "nes_6502.h"
 
-using namespace dumbnes;
+namespace dumbnes { namespace cpu6502 {
 
+using namespace dumbnes::memory;
+using namespace dumbnes::opcodes;
 
 inline static bool IsSamePage(uint16_t address_a, uint16_t address_b)
 {
@@ -358,21 +360,41 @@ void Nes6502::ProcessCLD(const OpInfo& op, OpResult& result)
     SetStatus(SR_D, false);
 }
 void Nes6502::ProcessCLI(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    SetStatus(SR_I, false);
 }
 void Nes6502::ProcessCLV(const OpInfo& op, OpResult& result)
 {
     SetStatus(SR_V, false);
 }
 void Nes6502::ProcessCMP(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    // Compare sets flags as if a subtraction had been carried out.
+    // If the value in the accumulator is equal or greater than the compared value,
+    // the Carry will be set. 
+    // The equal (Z) and sign (S) flags will be set based on equality
+    // or lack thereof and the sign (i.e. A>=$80) of the accumulator. 
+    auto operand = FetchOperand(op.mode, *memory_);
+    SetStatus(SR_Z, (operand == reg_a_));
+    SetStatus(SR_C, (reg_a_ >= operand));
+    SetStatus(SR_S, ((int)reg_a_ < (int)operand));
 }
 void Nes6502::ProcessCPX(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    auto operand = FetchOperand(op.mode, *memory_);
+    SetStatus(SR_Z, (operand == reg_x_));
+    SetStatus(SR_C, (reg_x_ >= operand));
+    SetStatus(SR_S, ((int)reg_x_ < (int)operand));
 }
+
 void Nes6502::ProcessCPY(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    auto operand = FetchOperand(op.mode, *memory_);
+    SetStatus(SR_Z, (operand == reg_y_));
+    SetStatus(SR_C, (reg_y_ >= operand));
+    SetStatus(SR_S, ((int)reg_y_ < (int)operand));
 }
+
 void Nes6502::ProcessDEC(const OpInfo& op, OpResult& result)
 {//TODO
 }
@@ -501,3 +523,4 @@ void Nes6502::ProcessTYA(const OpInfo& op, OpResult& result)
 {//TODO
 }
 
+}}

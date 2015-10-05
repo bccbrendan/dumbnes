@@ -11,9 +11,9 @@
 #define __FLAT_MEMORY_H
 
 #include "dumbnes_includes.h"
+#include "memory/memory_interface.h"
 
-namespace dumbnes
-{
+namespace dumbnes { namespace memory {
 
 class FlatMemory : public IMemory
 {
@@ -27,5 +27,6 @@ public:
     virtual uint8_t& operator[](const uint16_t addr) override;
 };
 
-} // namespace dumbnes
+}} // namespace dumbnes::memory
+
 #endif /* __FLAT_MEMORY_H */

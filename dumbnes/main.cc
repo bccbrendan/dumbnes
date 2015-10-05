@@ -1,9 +1,12 @@
 /*
- * dumbnes.cc
+ * main.cc
  * dummy application to play around with dumbnes in dev.
  */
 
 #include "dumbnes_includes.h"
+#include "dumbnes_config.h"
+#include "cpu6502/nes_6502.h"
+#include "memory/flat_memory.h"
 
 int main(int argc, char* argv[])
 {
@@ -13,8 +16,8 @@ int main(int argc, char* argv[])
     cout << argv[0] << " Version " << Dumbnes_VERSION_MAJOR
          << "." << Dumbnes_VERSION_MINOR << endl;
 
-    auto mem = std::make_shared<dumbnes::FlatMemory>();
-    auto cpu = std::make_shared<dumbnes::Nes6502>(mem);
+    auto mem = std::make_shared<dumbnes::memory::FlatMemory>();
+    auto cpu = std::make_shared<dumbnes::cpu6502::Nes6502>(mem);
     std::cout << "Resetting CPU regs!" << std::endl;
     cpu->Reset();
     (*mem)[0x0] = 0xa9; // LDA 

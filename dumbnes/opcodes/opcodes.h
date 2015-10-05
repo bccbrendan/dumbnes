@@ -12,8 +12,7 @@
  */
 #include "dumbnes_includes.h"
 
-namespace dumbnes
-{
+namespace dumbnes { namespace opcodes {
 
 enum class OpMode
 {
@@ -48,7 +47,7 @@ enum class Mnemonic : long unsigned int
 const std::string
 MnemonicString(const Mnemonic& mnem);
 
-} // namespace dumbnes
+}} // namespace dumbnes::opcodes
 
 
 #endif /* __6502_OPCODES_H */

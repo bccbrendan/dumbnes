@@ -8,10 +8,9 @@
  * brendan long
  * Feb 2015
  */
-#include "dumbnes_includes.h"
+#include "opcodes/opcodes.h"
 
-namespace dumbnes
-{
+namespace dumbnes { namespace opcodes {
 
 const std::string
 OpModeString(const OpMode& opmode)
@@ -46,5 +45,4 @@ MnemonicString(const Mnemonic& mnem)
     return mnemonic_names[(int)mnem];
 }
 
-} // namespace dumbnes
-
+}} // namespace dumbnes::opcodes

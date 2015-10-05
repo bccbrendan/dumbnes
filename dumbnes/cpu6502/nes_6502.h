@@ -8,12 +8,19 @@
  * Feb 2015
  */
 #include "dumbnes_includes.h"
+#include "cpu6502/op_result.h"
+#include "cpu6502/nes_6502_utils.h"
+#include "memory/memory_interface.h"
+#include "opcodes/opcodes.h"
+#include "opcodes/op_info.h"
 
-namespace dumbnes
-{
 
-class OpInfo;
-class OpResult;
+namespace dumbnes { namespace cpu6502 {
+
+using OpResult = dumbnes::cpu6502::OpResult;
+using OpInfo = dumbnes::opcodes::OpInfo;
+using OpMode = dumbnes::opcodes::OpMode;
+using IMemory = dumbnes::memory::IMemory;
 
 /* Status Register Codes
 bit ->   7 0
@@ -140,7 +147,7 @@ private:
 
     void HelpProcessBranch(const OpInfo& op, OpResult& result);
 };
-} // namespace dumbnes
+}} // namespace dumbnes::cpu6502
 
 #endif
 

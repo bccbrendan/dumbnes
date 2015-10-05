@@ -1,8 +1,6 @@
-#include "op_info.h"
+#include "opcodes/op_info.h"
 
-
-using namespace dumbnes;
-
+using namespace dumbnes::opcodes;
 
 std::ostream& operator<<(std::ostream& os, const OpInfo& op)
 {
