@@ -19,6 +19,7 @@ inline static bool IsSamePage(uint16_t address_a, uint16_t address_b)
 Nes6502::Nes6502(const std::shared_ptr<IMemory>& memory)
     :memory_(memory)
 {
+    reg_sp_ = 0xFF;
 }
 
 Nes6502::~Nes6502(void)
@@ -27,6 +28,7 @@ Nes6502::~Nes6502(void)
 
 void Nes6502::Reset (void)
 {
+    reg_sp_ = 0xFF;
 }
 
 int Nes6502::Step(void)
@@ -62,8 +64,7 @@ uint16_t Nes6502::FetchOperand(const OpMode& opmode, IMemory& mem)
         // hence the +2.
         return 2 + ByteNegative(b1) ? (reg_pc_ - b1) : (reg_pc_ + b1);
     default:
-        // TODO throw exception?
-        return 0; // not really valid - no operand.
+        throw std::logic_error("Invalid operand mode");
     }
 }
 
@@ -259,20 +260,26 @@ void Nes6502::HelpProcessBranch(const OpInfo& op,
         result.next_pc = target;
     }
 }
-
+/*from:
+ *https://sites.google.com/site/6502asembly/
+ *6502-architecture/registerstack-pointer
+ */
 void Nes6502::PushByte(uint8_t b)
 {
-    (*memory_)[reg_sp_] = b;
-    reg_sp_++;
+    /* The first data are stored at $01FF and so on. Pushing data to the stack
+     * causes the Stack Pointer (SP) to be decremented towards from $FF to $00
+     * (mapping to address $01FF to $0100). Conversely pulling bytes causes 
+     * it to be incremented towards form $00 to $FF.
+     */
+    (*memory_)[0x100 + reg_sp_] = b;
+    reg_sp_--;
 }
 
 uint8_t Nes6502::PopByte(void)
 {
-    return (*memory_)[reg_sp_--];
+    reg_sp_++;
+    return (*memory_)[0x100 + reg_sp_];
 }
-
-
-
 
 
 /******************************************************************************/
@@ -281,17 +288,29 @@ uint8_t Nes6502::PopByte(void)
 
 void Nes6502::ProcessADC(const OpInfo& op, OpResult& result)
 {
-    auto operand = FetchOperand(op.mode, *memory_);
+    auto addend = reg_a_;
+    auto augend = FetchOperand(op.mode, *memory_);
     if (GetStatus(SR_D))
     {
-        operand = DecodeBCD(operand);
+        addend = DecodeBCD(addend);
+        augend = DecodeBCD(augend);
     }
-    auto add_result = reg_a_ + operand;
-    SetStatus(SR_S, ByteNegative(add_result));
-    SetStatus(SR_V, add_result < reg_a_);
-    SetStatus(SR_Z, add_result == 0);
-    SetStatus(SR_C, add_result < reg_a_);
-    reg_a_ = add_result;
+    int sum = (addend + augend + GetStatus(SR_C) ? 1 : 0);
+    if (GetStatus(SR_D))
+    {
+        sum = EncodeBCD(sum);
+    }
+    /* In binary mode, after an ADC, the carry is set
+     * if the result was greater than 255 ($FF) and clear otherwise,
+     * In decimal mode, after an ADC, the carry is set
+     * if the result was greater than 99 ($99) and clear otherwise
+     */
+    auto carryThreshold = GetStatus(SR_D) ? 99 : 255;
+    SetStatus(SR_C, sum > carryThreshold);
+    SetStatus(SR_S, ByteNegative(sum));
+    SetStatus(SR_V, (sum >= -128) && (sum <= 127));
+    SetStatus(SR_Z, sum == 0);
+    reg_a_ = (uint8_t)(sum & 0xFF);
 }
 
 void Nes6502::ProcessAND(const OpInfo& op, OpResult& result)
@@ -551,7 +570,31 @@ void Nes6502::ProcessRTS(const OpInfo& op, OpResult& result)
 }
 
 void Nes6502::ProcessSBC(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    auto minuend = reg_a_;
+    auto subtrahend = FetchOperand(op.mode, *memory_);
+    if (GetStatus(SR_D))
+    {
+        minuend = DecodeBCD(minuend);
+        subtrahend = DecodeBCD(subtrahend);
+    }
+    int difference = (minuend - subtrahend) - (GetStatus(SR_C) ? 1 : 0);
+    if (GetStatus(SR_D))
+    {
+        difference = EncodeBCD(difference);
+    }
+    /* In either mode, after a SBC, the carry is clear
+     * if the result was less than 0 and set otherwise.
+     */
+    SetStatus(SR_C, difference < 0);
+
+    /* V flag is clear when the result is in the range -128 to 127 inclusive
+     * and set when the result is outside that range.
+     */
+    SetStatus(SR_V, (difference >= -128) && (difference <= 127));
+    SetStatus(SR_S, ByteNegative(difference));
+    SetStatus(SR_Z, difference == 0);
+    reg_a_ = (uint8_t) difference & 0xFF;
 }
 
 void Nes6502::ProcessSEC(const OpInfo& op, OpResult& result)
@@ -560,19 +603,32 @@ void Nes6502::ProcessSEC(const OpInfo& op, OpResult& result)
 }
 
 void Nes6502::ProcessSED(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    SetStatus(SR_D, true);
 }
+
 void Nes6502::ProcessSEI(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    SetStatus(SR_I, true);
 }
+
 void Nes6502::ProcessSTA(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    uint16_t target = DecodeAddress(op.mode, *memory_);
+    result.page_crossed = !IsSamePage(result.next_pc, target);
+    (*memory_)[target] = reg_a_;
 }
+
 void Nes6502::ProcessSTX(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    uint16_t target = DecodeAddress(op.mode, *memory_);
+    (*memory_)[target] = reg_x_;
 }
+
 void Nes6502::ProcessSTY(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    uint16_t target = DecodeAddress(op.mode, *memory_);
+    (*memory_)[target] = reg_y_;
 }
 
 void Nes6502::ProcessTAX(const OpInfo& op, OpResult& result)
@@ -590,7 +646,10 @@ void Nes6502::ProcessTAY(const OpInfo& op, OpResult& result)
 }
 
 void Nes6502::ProcessTSX(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    reg_x_ = reg_sp_;
+    SetStatus(SR_S, ByteNegative(reg_x_));
+    SetStatus(SR_Z, reg_x_ == 0);
 }
 
 void Nes6502::ProcessTXA(const OpInfo& op, OpResult& result)
@@ -601,7 +660,10 @@ void Nes6502::ProcessTXA(const OpInfo& op, OpResult& result)
 }
 
 void Nes6502::ProcessTXS(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    // According to this, status bits aren't set by TXS
+    // https://sites.google.com/site/6502asembly/6502-instruction-set/txs
+    reg_sp_ = reg_x_;
 }
 
 void Nes6502::ProcessTYA(const OpInfo& op, OpResult& result)

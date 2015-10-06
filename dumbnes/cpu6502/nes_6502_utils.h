@@ -17,6 +17,11 @@ namespace dumbnes { namespace cpu6502 {
     {
         return (10 * (hex_bcd >> 4)) + hex_bcd & 0xF;
     }
+
+    inline uint8_t EncodeBCD(uint8_t bcd)
+    {
+        return ((bcd / 10) << 4) | (bcd % 10);
+    }
 }}
 
 #endif /* __NES_6502_UTILS_H */
