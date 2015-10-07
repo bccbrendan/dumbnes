@@ -68,7 +68,6 @@ public:
     ~Nes6502(void);
     void Reset (void);
     int Step(void);
-    int Interrupt( /*TODO code?*/);
     inline uint16_t PC(void) const {return reg_pc_;}
     inline uint16_t A(void) const {return reg_a_;}
 

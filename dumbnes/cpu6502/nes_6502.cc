@@ -4,6 +4,9 @@
  * Feb 2015
  */
 
+/* super reference here:
+ * http://homepage.ntlworld.com/cyborgsystems/CS_Main/6502/6502.htm
+ */
 #include "nes_6502.h"
 
 namespace dumbnes { namespace cpu6502 {
@@ -245,10 +248,6 @@ size_t Nes6502::CyclesTaken(OpInfo const& op, OpResult const& result)
     return incremental_time;
 }
 
-int Nes6502::Interrupt( /*TODO code?*/)
-{
-}
-
 void Nes6502::HelpProcessBranch(const OpInfo& op,
         OpResult& result)
 {
@@ -288,28 +287,24 @@ uint8_t Nes6502::PopByte(void)
 
 void Nes6502::ProcessADC(const OpInfo& op, OpResult& result)
 {
-    auto addend = reg_a_;
-    auto augend = FetchOperand(op.mode, *memory_);
-    if (GetStatus(SR_D))
-    {
-        addend = DecodeBCD(addend);
-        augend = DecodeBCD(augend);
-    }
-    int sum = (addend + augend + GetStatus(SR_C) ? 1 : 0);
-    if (GetStatus(SR_D))
-    {
-        sum = EncodeBCD(sum);
-    }
-    /* In binary mode, after an ADC, the carry is set
-     * if the result was greater than 255 ($FF) and clear otherwise,
-     * In decimal mode, after an ADC, the carry is set
-     * if the result was greater than 99 ($99) and clear otherwise
-     */
-    auto carryThreshold = GetStatus(SR_D) ? 99 : 255;
-    SetStatus(SR_C, sum > carryThreshold);
-    SetStatus(SR_S, ByteNegative(sum));
-    SetStatus(SR_V, (sum >= -128) && (sum <= 127));
+    // TODO detect page boundary crossings!!!
+    uint8_t addend = reg_a_;
+    uint8_t augend = FetchOperand(op.mode, *memory_);
+    uint16_t sum = addend + augend + (GetStatus(SR_C) ? 1 : 0);
+    SetStatus(SR_V, ByteNegative(addend) != ByteNegative(sum));
+    SetStatus(SR_S, ByteNegative(addend));
     SetStatus(SR_Z, sum == 0);
+    if (GetStatus(SR_D))
+    {
+        sum = DecodeBCD(addend)
+            + DecodeBCD(augend)
+            + (GetStatus(SR_C) ? 1 : 0);
+        SetStatus(SR_C, sum > 99);
+    }
+    else
+    {
+        SetStatus(SR_C, sum > 255);
+    }
     reg_a_ = (uint8_t)(sum & 0xFF);
 }
 
@@ -374,7 +369,13 @@ void Nes6502::ProcessBEQ(const OpInfo& op, OpResult& result)
 }
 
 void Nes6502::ProcessBRK(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    uint16_t return_address = reg_pc_ + 1;
+    PushByte((uint8_t)(return_address >> 8));
+    PushByte((uint8_t)(return_address & 0xFF));
+    uint16_t l = (*memory_)[0xFFFF];
+    uint16_t h = (*memory_)[0xFFFF] << 8;
+    result.next_pc = h | l;
 }
 
 void Nes6502::ProcessBIT(const OpInfo& op, OpResult& result)
@@ -496,13 +497,11 @@ void Nes6502::ProcessJMP(const OpInfo& op, OpResult& result)
 
 void Nes6502::ProcessJSR(const OpInfo& op, OpResult& result)
 {
-    auto operand = FetchOperand(op.mode, *memory_);
     auto return_address = result.next_pc - 1;
-    result.next_pc = operand;
     PushByte((return_address & 0xF0) >> 8); // msb first
     PushByte(return_address & 0x0F);
-    // TODO push status reg?
-    PushByte(reg_sr_);
+    auto operand = FetchOperand(op.mode, *memory_);
+    result.next_pc = operand;
 }
 
 void Nes6502::ProcessLDA(const OpInfo& op, OpResult& result)
@@ -530,68 +529,136 @@ void Nes6502::ProcessLDY(const OpInfo& op, OpResult& result)
 }
 
 void Nes6502::ProcessLSR(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    bool carry = (reg_a_ & 0x1) == 0x1;
+    reg_a_ = reg_a_ >> 1;
+    SetStatus(SR_Z, reg_a_ == 0);
+    SetStatus(SR_S, ByteNegative(reg_a_));
+    SetStatus(SR_C, carry);
 }
+
 void Nes6502::ProcessNOP(const OpInfo& op, OpResult& result)
-{//TODO
+{
 }
+
 void Nes6502::ProcessORA(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    auto rhs = FetchOperand(op.mode, *memory_);
+    reg_a_ = reg_a_ | rhs;
+    SetStatus(SR_S, ByteNegative(reg_a_));
+    SetStatus(SR_Z, reg_a_ == 0);
 }
+
 void Nes6502::ProcessPHA(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    PushByte(reg_a_);
 }
+
 void Nes6502::ProcessPHP(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    PushByte(reg_sr_);
 }
+
 void Nes6502::ProcessPLA(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    reg_a_ = PopByte();
 }
+
 void Nes6502::ProcessPLP(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    reg_sr_ = PopByte();
 }
+
 void Nes6502::ProcessROL(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    if (op.mode == OpMode::Accumulator)
+    {
+        // shift data in memory in place by accumulator.
+        uint16_t target = DecodeAddress(op.mode, *memory_);
+        uint8_t base = (*memory_)[target];
+        uint8_t shifted = (uint8_t)((base << 1) | GetStatus(SR_C) ? 1 : 0);
+        (*memory_)[target] = shifted;
+        SetStatus(SR_C, ByteNegative(base));
+        SetStatus(SR_Z, shifted == 0);
+        SetStatus(SR_S, ByteNegative(shifted));
+    }
+    else
+    {
+        // rotate accumulator by operand
+        uint8_t shift = FetchOperand(op.mode, *memory_);
+        uint8_t base = reg_a_;
+        uint8_t shifted = (uint8_t)((base << 1) | GetStatus(SR_C) ? 1 : 0);
+        reg_a_ = shifted;
+        SetStatus(SR_C, ByteNegative(base));
+        SetStatus(SR_Z, shifted == 0);
+        SetStatus(SR_S, ByteNegative(shifted));
+    }
 }
+
 void Nes6502::ProcessROR(const OpInfo& op, OpResult& result)
-{//TODO
+{
+    if (op.mode == OpMode::Accumulator)
+    {
+        // shift data in memory in place by accumulator.
+        uint16_t target = DecodeAddress(op.mode, *memory_);
+        uint8_t base = (*memory_)[target];
+        uint8_t shifted = (uint8_t)((base >> 1) | GetStatus(SR_C) ? 0x80 : 0);
+        (*memory_)[target] = shifted;
+        SetStatus(SR_C, base & 0x1);
+        SetStatus(SR_Z, shifted == 0);
+        SetStatus(SR_S, ByteNegative(shifted));
+    }
+    else
+    {
+        // rotate accumulator by operand
+        uint8_t shift = FetchOperand(op.mode, *memory_);
+        uint8_t base = reg_a_;
+        uint8_t shifted = (uint8_t)((base >> 1) | GetStatus(SR_C) ? 0x80 : 0);
+        reg_a_ = shifted;
+        SetStatus(SR_C, base & 0x1);
+        SetStatus(SR_Z, shifted == 0);
+        SetStatus(SR_S, ByteNegative(shifted));
+    }
+
 }
 void Nes6502::ProcessRTI(const OpInfo& op, OpResult& result)
-{//TODO
-
+{
+    reg_sr_ = PopByte();
+    uint16_t l = PopByte();
+    uint16_t h = PopByte();
+    uint16_t return_address = (h << 8) | l;
+    result.next_pc = return_address;
 }
 
 void Nes6502::ProcessRTS(const OpInfo& op, OpResult& result)
 {
-    reg_sr_ = PopByte(); // TODO pop status reg?
-    uint16_t return_address = PopByte();
-    return_address |= (PopByte() << 8);
+    uint16_t l = PopByte();
+    uint16_t h = PopByte();
+    uint16_t return_address = ((h << 8) | l) + 1;
     result.next_pc = return_address;
 }
 
 void Nes6502::ProcessSBC(const OpInfo& op, OpResult& result)
 {
     auto minuend = reg_a_;
-    auto subtrahend = FetchOperand(op.mode, *memory_);
+    uint8_t subtrahend = FetchOperand(op.mode, *memory_);
+    int difference = 0;
     if (GetStatus(SR_D))
     {
         minuend = DecodeBCD(minuend);
         subtrahend = DecodeBCD(subtrahend);
+        difference = (minuend - subtrahend) - (GetStatus(SR_C) ? 1 : 0);
+        SetStatus(SR_V, (difference > 99) || (difference < 0));
     }
-    int difference = (minuend - subtrahend) - (GetStatus(SR_C) ? 1 : 0);
-    if (GetStatus(SR_D))
+    else
     {
-        difference = EncodeBCD(difference);
+        difference = (minuend - subtrahend) - (GetStatus(SR_C) ? 1 : 0);
+        SetStatus(SR_V, (difference > 127) || (difference < -128));
     }
     /* In either mode, after a SBC, the carry is clear
      * if the result was less than 0 and set otherwise.
      */
-    SetStatus(SR_C, difference < 0);
-
-    /* V flag is clear when the result is in the range -128 to 127 inclusive
-     * and set when the result is outside that range.
-     */
-    SetStatus(SR_V, (difference >= -128) && (difference <= 127));
+    SetStatus(SR_C, difference >= 0);
     SetStatus(SR_S, ByteNegative(difference));
     SetStatus(SR_Z, difference == 0);
     reg_a_ = (uint8_t) difference & 0xFF;
