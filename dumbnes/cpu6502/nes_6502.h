@@ -72,8 +72,14 @@ public:
     inline uint16_t A(void) const {return reg_a_;}
 
 private:
-    uint16_t FetchOperand(const OpMode& opmode, IMemory& mem);
-    uint16_t DecodeAddress(const OpMode& opmode, IMemory& mem);
+
+    uint16_t FetchOperand(const OpMode& opmode,
+            IMemory& mem,
+            OpResult &result);
+
+    uint16_t DecodeAddress(const OpMode& opmode,
+            IMemory& mem,
+            OpResult &result);
     bool IsBranchTaken(const OpInfo& op) const;
     void ProcessOp(const OpInfo& op);
 
