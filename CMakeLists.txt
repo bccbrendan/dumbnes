@@ -21,17 +21,25 @@ include_directories ("${PROJECT_BINARY_DIR}"
 
 # list source files
 set (SOURCE ${SOURCE}
-    ${PROJECT_SOURCE_DIR}/memory/flat_memory.cc
     ${PROJECT_SOURCE_DIR}/cpu6502/nes_6502.cc
     ${PROJECT_SOURCE_DIR}/cpu6502/op_result.cc
+    ${PROJECT_SOURCE_DIR}/memory/flat_memory.cc
     ${PROJECT_SOURCE_DIR}/opcodes/op_info.cc
     ${PROJECT_SOURCE_DIR}/opcodes/opcodes.cc
+    ${PROJECT_SOURCE_DIR}/ppu/ppu.cc
     ${PROJECT_SOURCE_DIR}/main.cc
     ${PROJECT_SOURCE_DIR}/assembler/assembler.cc
     )
 
 #add the executable
 add_executable (dumbnes_emu ${SOURCE})
+
+#external libraries
+target_link_libraries(dumbnes_emu sfml-system sfml-graphics sfml-window)
+
+# pthreads library - seems needed on linux #TODO make platform-specific
+# http://ubuntuforums.org/showthread.php?t=2273365
+target_link_libraries(dumbnes_emu pthread)
 
 # add the install targets
 install (TARGETS dumbnes_emu DESTINATION bin)

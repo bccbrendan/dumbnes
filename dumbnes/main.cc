@@ -7,6 +7,7 @@
 #include "dumbnes_config.h"
 #include "cpu6502/nes_6502.h"
 #include "memory/flat_memory.h"
+#include "ppu/ppu.h"
 
 int main(int argc, char* argv[])
 {
@@ -28,6 +29,11 @@ int main(int argc, char* argv[])
               << " PC: 0x" << cpu->PC() << std::endl
               << "  A: 0x" << cpu->A() << std:: endl
               ;
+    // TODO provide some kinda callback to the PPU for user GUI clicks?
+    auto ppu = std::make_shared<dumbnes::ppu::Ppu>();
+    ppu->StartGraphics();
 
-    std::cout << "Goodbye!" << std::endl;
+    std::cout << "hit enter to terminate!" << std::endl;
+    std::string input;
+    std::cin >> input;
 }
