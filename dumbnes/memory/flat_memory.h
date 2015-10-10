@@ -25,6 +25,10 @@ public:
     void InitializeBlock(void /*TODO*/) override;
     virtual void DumpBlock(/*TODO*/) override ;
     virtual uint8_t& operator[](const uint16_t addr) override;
+    virtual void W(const uint16_t addr, uint8_t data) override;
+    virtual uint8_t R(const uint16_t addr) const override;
+
+
 };
 
 }} // namespace dumbnes::memory

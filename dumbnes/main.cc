@@ -30,7 +30,8 @@ int main(int argc, char* argv[])
               << "  A: 0x" << cpu->A() << std:: endl
               ;
     // TODO provide some kinda callback to the PPU for user GUI clicks?
-    auto ppu = std::make_shared<dumbnes::ppu::Ppu>();
+    auto ppu = std::make_shared<dumbnes::ppu::Ppu>(mem);
+    ppu->Powerup();
     ppu->StartGraphics();
 
     std::cout << "hit enter to terminate!" << std::endl;

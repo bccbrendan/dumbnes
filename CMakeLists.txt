@@ -23,6 +23,7 @@ include_directories ("${PROJECT_BINARY_DIR}"
 set (SOURCE ${SOURCE}
     ${PROJECT_SOURCE_DIR}/cpu6502/nes_6502.cc
     ${PROJECT_SOURCE_DIR}/cpu6502/op_result.cc
+    ${PROJECT_SOURCE_DIR}/memory/memory_interface.cc
     ${PROJECT_SOURCE_DIR}/memory/flat_memory.cc
     ${PROJECT_SOURCE_DIR}/opcodes/op_info.cc
     ${PROJECT_SOURCE_DIR}/opcodes/opcodes.cc

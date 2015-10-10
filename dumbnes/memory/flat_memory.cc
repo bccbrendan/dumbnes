@@ -29,3 +29,15 @@ uint8_t& FlatMemory::operator[](const uint16_t addr)
 {
     return _contents[addr];
 }
+
+void FlatMemory::W(const uint16_t addr, uint8_t data)
+{
+    _contents[addr] = data;
+}
+
+uint8_t FlatMemory::R(const uint16_t addr) const
+{
+    return _contents[addr];
+}
+
+
