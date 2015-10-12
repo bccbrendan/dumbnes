@@ -15,7 +15,7 @@ namespace dumbnes { namespace cpu6502 {
 
     inline uint8_t DecodeBCD(uint8_t hex_bcd)
     {
-        return (10 * (hex_bcd >> 4)) + hex_bcd & 0xF;
+        return (10 * (hex_bcd >> 4)) + (hex_bcd & 0xF);
     }
 
     inline uint8_t EncodeBCD(uint8_t bcd)

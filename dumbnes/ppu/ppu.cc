@@ -10,31 +10,25 @@ using dumbnes::memory::IMemory;
 
 void Ppu::GfxThread(void)
 {
-    sf::RenderWindow window(sf::VideoMode(200, 200), "DumbNes");
+    window_->setActive(true);
     sf::CircleShape shape(100.f);
     shape.setFillColor(sf::Color::Magenta);
 
-    while (!gfx_thread_kill_ && window.isOpen())
+    while (!gfx_thread_kill_ && window_->isOpen())
     {
-        sf::Event event;
-        while (window.pollEvent(event))
-        {
-            if (event.type == sf::Event::Closed)
-            {
-                window.close();
-            }
-        }
-        window.clear();
-        window.draw(shape);
-        window.display();
+        window_->clear();
+        window_->draw(shape);
+        window_->display();
     }
 }
     
-Ppu::Ppu(std::shared_ptr<IMemory> memory)
+Ppu::Ppu(std::shared_ptr<IMemory> memory,
+         std::shared_ptr<sf::RenderWindow> window)
     : gfx_thread_()
     , gfx_thread_kill_(false)
     , memory_(memory)
     , odd_frame_(false)
+    , window_(window)
 {
 }
 

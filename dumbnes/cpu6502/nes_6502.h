@@ -67,7 +67,7 @@ public:
     Nes6502(const std::shared_ptr<IMemory>& memory);
     ~Nes6502(void);
     void Reset (void);
-    int Step(void);
+    void Step(void);
     inline uint16_t PC(void) const {return reg_pc_;}
     inline uint16_t A(void) const {return reg_a_;}
 

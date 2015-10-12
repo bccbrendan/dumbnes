@@ -34,7 +34,7 @@ void Nes6502::Reset (void)
     reg_sp_ = 0xFF;
 }
 
-int Nes6502::Step(void)
+void Nes6502::Step(void)
 {
     auto next_op = OpInfo::Decode((*memory_)[reg_pc_]);
     std::cout << "PC[0x" << std::hex << reg_pc_ << "] "
@@ -99,15 +99,15 @@ Nes6502::DecodeAddress(const OpMode& opmode, IMemory& mem, OpResult &result)
     case OpMode::AbsoluteX:
         b1 = mem[reg_pc_+1];
         b2 = mem[reg_pc_+2];
-        address = reg_x_ + (uint16_t)b2 << 8 | b1;
+        address = ((reg_x_ + (uint16_t)b2) << 8) | b1;
     case OpMode::AbsoluteY:
         b1 = mem[reg_pc_+1];
         b2 = mem[reg_pc_+2];
-        address = reg_y_ + (uint16_t)b2 << 8 | b1;
+        address = (reg_y_ + (uint16_t)b2) << 8 | b1;
     case OpMode::Indirect:
         b1 = mem[reg_pc_+1];
         b2 = mem[reg_pc_+2];
-        indirect_addr16 = (uint16_t)b2 << 8 | b1;
+        indirect_addr16 = ((uint16_t)b2 << 8) | b1;
         b1 = mem[indirect_addr16];
         b2 = mem[indirect_addr16 + 1];
         address = (uint16_t)b2 << 8 | b1;
@@ -118,9 +118,9 @@ Nes6502::DecodeAddress(const OpMode& opmode, IMemory& mem, OpResult &result)
         address = (uint16_t)b2 << 8 | b1;
     case OpMode::IndirectY:
         b1 = mem[reg_pc_+1];
-        b2 = mem[reg_pc_+2];
+        b2 = mem[(reg_pc_+2) & 0xFF];
         indirect_addr16 = (uint16_t)b2 << 8 | b1;
-        address = reg_y_ + indirect_addr16;
+        address = (reg_y_ + indirect_addr16) & 0xFFFF;
     default:
         address = 0x0;
     }
@@ -324,7 +324,6 @@ void Nes6502::ProcessAND(const OpInfo& op, OpResult& result)
 
 void Nes6502::ProcessASL(const OpInfo& op, OpResult& result)
 {
-    auto operand = FetchOperand(op.mode, *memory_, result);
     SetStatus(SR_C, (reg_a_ & 0x80) != 0);
     auto shift_result = reg_a_ << 1;
     SetStatus(SR_S, ByteNegative(shift_result));
@@ -590,7 +589,6 @@ void Nes6502::ProcessROL(const OpInfo& op, OpResult& result)
     else
     {
         // rotate accumulator by operand
-        uint8_t shift = FetchOperand(op.mode, *memory_, result);
         uint8_t base = reg_a_;
         uint8_t shifted = (uint8_t)((base << 1) | GetStatus(SR_C) ? 1 : 0);
         reg_a_ = shifted;
@@ -616,7 +614,6 @@ void Nes6502::ProcessROR(const OpInfo& op, OpResult& result)
     else
     {
         // rotate accumulator by operand
-        uint8_t shift = FetchOperand(op.mode, *memory_, result);
         uint8_t base = reg_a_;
         uint8_t shifted = (uint8_t)((base >> 1) | GetStatus(SR_C) ? 0x80 : 0);
         reg_a_ = shifted;

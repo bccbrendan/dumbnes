@@ -1,7 +1,12 @@
 # based on http://www.cmake.org/cmake-tutorial/
 cmake_minimum_required (VERSION 2.8)
 project (Dumbnes)
+
 add_compile_options(-std=c++14)
+if (UNIX)
+    add_compile_options(-Wextra)
+endif()
+
 # set up project directory structure
 set (PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}/dumbnes")
 set (PROJECT_BINARY_DIR "${PROJECT_BINARY_DIR}/bin")
@@ -37,6 +42,7 @@ add_executable (dumbnes_emu ${SOURCE})
 
 #external libraries
 target_link_libraries(dumbnes_emu sfml-system sfml-graphics sfml-window)
+target_link_libraries(dumbnes_emu X11)
 
 # pthreads library - seems needed on linux #TODO make platform-specific
 # http://ubuntuforums.org/showthread.php?t=2273365

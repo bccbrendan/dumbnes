@@ -8,5 +8,7 @@
 #include <vector>
 #include <sstream>
 #include <string>
+#include <thread>
+#include <chrono>
 
 #endif /* __DUMBNES_INCLUDES_H */
