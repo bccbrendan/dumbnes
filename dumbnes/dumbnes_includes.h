@@ -10,5 +10,7 @@
 #include <string>
 #include <thread>
 #include <chrono>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 #endif /* __DUMBNES_INCLUDES_H */

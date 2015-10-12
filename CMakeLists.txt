@@ -28,6 +28,7 @@ include_directories ("${PROJECT_BINARY_DIR}"
 set (SOURCE ${SOURCE}
     ${PROJECT_SOURCE_DIR}/cpu6502/nes_6502.cc
     ${PROJECT_SOURCE_DIR}/cpu6502/op_result.cc
+    ${PROJECT_SOURCE_DIR}/console/console.cc
     ${PROJECT_SOURCE_DIR}/memory/memory_interface.cc
     ${PROJECT_SOURCE_DIR}/memory/flat_memory.cc
     ${PROJECT_SOURCE_DIR}/opcodes/op_info.cc
@@ -42,7 +43,10 @@ add_executable (dumbnes_emu ${SOURCE})
 
 #external libraries
 target_link_libraries(dumbnes_emu sfml-system sfml-graphics sfml-window)
+# needed to workaround multithreading rendering issue with SFML
 target_link_libraries(dumbnes_emu X11)
+# console interface
+target_link_libraries(dumbnes_emu readline)
 
 # pthreads library - seems needed on linux #TODO make platform-specific
 # http://ubuntuforums.org/showthread.php?t=2273365
