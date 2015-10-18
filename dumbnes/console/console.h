@@ -20,6 +20,7 @@ namespace console
 using std::cout;
 using std::endl;
 
+typedef std::function<void(std::vector<std::string> const&, std::ostream&)> HandlerFunc;
 
 class Console
 {
@@ -29,9 +30,14 @@ private:
     std::shared_ptr<dumbnes::cpu6502::Nes6502> cpu_;
     std::shared_ptr<dumbnes::memory::IMemory> memory_;
     std::shared_ptr<dumbnes::ppu::Ppu> ppu_;
+//    std::map<std::string, HandlerFunc> handlers_;
+    std::map<std::string, HandlerFunc> handlers_;
 
     void ConsoleThread(void);
     
+    void PrintHeader(std::ostream &out) const;
+    // CommandHandler GetHandler const(std::string);
+ 
 public:
 
     Console(std::shared_ptr<dumbnes::cpu6502::Nes6502> cpu,
@@ -40,8 +46,18 @@ public:
 
     void StartPrompt(void);
 
+    /* Handlers */
+    void HandleHelp(std::vector<std::string> const& tokens, std::ostream& out) const;
+
+
+
     ~Console(void);
 };
+
+
+/* simple tokenizer */
+std::vector<std::string> Tokenize(std::string const& line);
+
     
 /* convenience function for readline.
  * Read a string, and return a pointer to it.  Returns NULL on EOF.

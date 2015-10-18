@@ -11,8 +11,8 @@ using dumbnes::memory::IMemory;
 void Ppu::GfxThread(void)
 {
     window_->setActive(true);
-    sf::CircleShape shape(100.f);
-    shape.setFillColor(sf::Color::Magenta);
+    sf::CircleShape shape(100.f, 100); // radius, pointcount
+    shape.setFillColor(sf::Color::Cyan);
 
     while (!gfx_thread_kill_ && window_->isOpen())
     {
