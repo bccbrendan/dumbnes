@@ -9,20 +9,11 @@ namespace console
 
 using dumbnes::memory::IMemory;
 using namespace std;
+using namespace dumbnes::cpu6502;
 
 void Console::ConsoleThread(void)
 {
     PrintHeader(cout);
-    /*
-    (*memory_)[0x0] = 0xa9; // LDA 
-    (*memory_)[0x1] = 0xc0; // 
-    cpu_->Step();
-    cout << hex
-              << "Cpu state dump: " << endl
-              << " PC: 0x" << cpu_->PC() << endl
-              << "  A: 0x" << cpu_->A() << endl
-              ;
-    */
     while (!console_thread_kill_)
     {
         char *command = rl_gets();
@@ -60,6 +51,9 @@ Console::Console(shared_ptr<dumbnes::cpu6502::Nes6502> cpu,
     using std::placeholders::_1;
     using std::placeholders::_2;
     handlers_["?"] = std::bind(&Console::HandleHelp, this, _1, _2);
+    handlers_["quit"] = std::bind(&Console::HandleQuit, this, _1, _2);
+    handlers_["registers"] = std::bind(&Console::HandleRegisters, this, _1, _2);
+    handlers_["step"] = std::bind(&Console::HandleStep, this, _1, _2);
 }
 
     
@@ -68,6 +62,14 @@ void Console::StartPrompt(void)
     console_thread_ = thread(&Console::ConsoleThread, this);
 }
 
+bool Console::PromptRunning(void) const
+{
+    // the console might terminate if the user runs 'quit'
+    // In this case, 'quit' signals console_thread_kill_,
+    // and the application must close (only then does
+    // the thread actually get killed - in the ~Console dtor).
+    return !console_thread_kill_;
+}
 
 Console::~Console(void)
 {
@@ -98,7 +100,55 @@ void Console::HandleHelp(std::vector<std::string> const& tokens, std::ostream& o
     out << endl;
 }
 
+void Console::HandleQuit(std::vector<std::string> const& tokens, std::ostream& out)
+{
+    out << "Terminating console thread" << endl;
+    console_thread_kill_ = true;
+}
 
+void Console::HandleRegisters(std::vector<std::string> const& tokens, std::ostream& out) const
+{
+    out << hex << setfill('0')
+        << "PC : 0x" << setw(4) << (int)(cpu_->PC()) << endl
+        << "SP : 0x" << setw(2) << (int)(cpu_->SP()) << endl
+        << "A  : 0x" << setw(2) << (int)(cpu_->A()) << endl
+        << "X  : 0x" << setw(2) << (int)(cpu_->X()) << endl
+        << "Y  : 0x" << setw(2) << (int)(cpu_->Y()) << endl
+        << "SR : 0x" << setw(2) << (int)(cpu_->SR()) << endl
+        << "+--------------------------------" << endl
+        << "| N | V |   | B | D | I | Z | C |" << endl
+        << "| " << setw(1) << cpu_->GetStatus(SR_S) << " "
+        << "| " << setw(1) << cpu_->GetStatus(SR_V) << " "
+        << "|   "
+        << "| " << setw(1) << cpu_->GetStatus(SR_B) << " "
+        << "| " << setw(1) << cpu_->GetStatus(SR_D) << " "
+        << "| " << setw(1) << cpu_->GetStatus(SR_I) << " "
+        << "| " << setw(1) << cpu_->GetStatus(SR_Z) << " "
+        << "| " << setw(1) << cpu_->GetStatus(SR_C) << " |" << endl
+        << "+-------------------------------+" << endl
+        << dec;
+}
+  
+void Console::HandleStep(std::vector<std::string> const& tokens, std::ostream& out) const
+{
+    cpu_->Step();
+    out << "PC : 0x" << cpu_->PC() << endl;
+}
+
+void Console::HandleSetPC(std::vector<std::string> const& tokens, std::ostream& out) const
+{
+    // TODO
+}
+
+void Console::HandleMemdump(std::vector<std::string> const& tokens, std::ostream& out) const
+{
+    // TODO
+}
+
+void Console::HandleMemset(std::vector<std::string> const& tokens, std::ostream& out) const
+{
+    // TODO
+}
 
 
 std::vector<std::string> Tokenize(std::string const& line)
@@ -134,7 +184,7 @@ rl_gets ()
     }
 
     /* Get a line from the user. */
-    line_read = readline (">t");
+    line_read = readline (">");
 
     /* If the line has any text in it, save it on the history. */
     if (line_read && *line_read)

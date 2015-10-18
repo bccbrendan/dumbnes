@@ -45,9 +45,16 @@ public:
             std::shared_ptr<dumbnes::ppu::Ppu> ppu);
 
     void StartPrompt(void);
+    bool PromptRunning(void) const;
 
     /* Handlers */
     void HandleHelp(std::vector<std::string> const& tokens, std::ostream& out) const;
+    void HandleQuit(std::vector<std::string> const& tokens, std::ostream& out);
+    void HandleRegisters(std::vector<std::string> const& tokens, std::ostream& out) const;
+    void HandleStep(std::vector<std::string> const& tokens, std::ostream& out) const;
+    void HandleSetPC(std::vector<std::string> const& tokens, std::ostream& out) const;
+    void HandleMemdump(std::vector<std::string> const& tokens, std::ostream& out) const;
+    void HandleMemset(std::vector<std::string> const& tokens, std::ostream& out) const;
 
 
 

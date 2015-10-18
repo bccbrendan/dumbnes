@@ -25,7 +25,7 @@ using IMemory = dumbnes::memory::IMemory;
 /* Status Register Codes
 bit ->   7 0
 +---+---+---+---+---+---+---+---+
-| N | V |   | B | D | I | Z | C |  <-- flag, 0/1 = reset/set
+| S | V |   | B | D | I | Z | C |  <-- flag, 0/1 = reset/set
 +---+---+---+---+---+---+---+---+
 */
 
@@ -68,8 +68,14 @@ public:
     ~Nes6502(void);
     void Reset (void);
     void Step(void);
+
     inline uint16_t PC(void) const {return reg_pc_;}
-    inline uint16_t A(void) const {return reg_a_;}
+    inline uint8_t A(void) const {return reg_a_;}
+    inline uint8_t X(void) const {return reg_x_;}
+    inline uint8_t Y(void) const {return reg_y_;}
+    inline uint8_t SP(void) const {return reg_sp_;}
+    inline uint8_t SR(void) const {return reg_sr_;}
+    bool GetStatus(uint8_t bit) const;
 
 private:
 
@@ -89,7 +95,6 @@ private:
     size_t CyclesTaken(const OpInfo& op, const OpResult& result);
     
     Nes6502& SetStatus(uint8_t bit, bool val);
-    bool GetStatus(uint8_t bit) const;
 
     void PushByte(uint8_t b);
     uint8_t PopByte(void);

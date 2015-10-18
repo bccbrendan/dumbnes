@@ -48,5 +48,9 @@ int main(int argc, char* argv[])
                 window->close();
             }
         }
+        if (!console->PromptRunning())
+        {
+            window->close();
+        }
     }
 }
