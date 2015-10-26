@@ -22,6 +22,10 @@ namespace dumbnes { namespace cpu6502 {
     {
         return ((bcd / 10) << 4) | (bcd % 10);
     }
+
+    int ParseAddressAndLength(std::string const& address_arg,
+            uint16_t &start_addr,
+            uint16_t &num_bytes);
 }}
 
 #endif /* __NES_6502_UTILS_H */

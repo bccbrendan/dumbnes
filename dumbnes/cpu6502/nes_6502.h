@@ -70,11 +70,17 @@ public:
     void Step(void);
 
     inline uint16_t PC(void) const {return reg_pc_;}
+    inline Nes6502& PC(uint16_t new_pc) { reg_pc_ = new_pc; }
     inline uint8_t A(void) const {return reg_a_;}
+    inline Nes6502& A(uint8_t new_A) {reg_a_ = new_A;}
     inline uint8_t X(void) const {return reg_x_;}
+    inline Nes6502& X(uint8_t new_X) {reg_x_ = new_X;}
     inline uint8_t Y(void) const {return reg_y_;}
+    inline Nes6502& Y(uint8_t new_Y) {reg_y_ = new_Y;}
     inline uint8_t SP(void) const {return reg_sp_;}
+    inline Nes6502& SP(uint8_t new_SP) {reg_sp_=  new_SP;}
     inline uint8_t SR(void) const {return reg_sr_;}
+    inline Nes6502& SR(uint8_t new_SR) {reg_sr_= new_SR;}
     bool GetStatus(uint8_t bit) const;
 
 private:

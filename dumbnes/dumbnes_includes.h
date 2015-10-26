@@ -11,6 +11,7 @@
 #include <string>
 #include <thread>
 #include <chrono>
+#include <regex>
 #include <readline/readline.h>
 #include <readline/history.h>
 

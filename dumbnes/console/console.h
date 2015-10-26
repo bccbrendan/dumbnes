@@ -52,7 +52,7 @@ public:
     void HandleQuit(std::vector<std::string> const& tokens, std::ostream& out);
     void HandleRegisters(std::vector<std::string> const& tokens, std::ostream& out) const;
     void HandleStep(std::vector<std::string> const& tokens, std::ostream& out) const;
-    void HandleSetPC(std::vector<std::string> const& tokens, std::ostream& out) const;
+    void HandleSetReg(std::vector<std::string> const& tokens, std::ostream& out) const;
     void HandleMemdump(std::vector<std::string> const& tokens, std::ostream& out) const;
     void HandleMemset(std::vector<std::string> const& tokens, std::ostream& out) const;
 

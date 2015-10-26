@@ -54,6 +54,9 @@ Console::Console(shared_ptr<dumbnes::cpu6502::Nes6502> cpu,
     handlers_["quit"] = std::bind(&Console::HandleQuit, this, _1, _2);
     handlers_["registers"] = std::bind(&Console::HandleRegisters, this, _1, _2);
     handlers_["step"] = std::bind(&Console::HandleStep, this, _1, _2);
+    handlers_["setreg"] = std::bind(&Console::HandleSetReg, this, _1, _2);
+    handlers_["memdump"] = std::bind(&Console::HandleMemdump, this, _1, _2);
+    handlers_["memset"] = std::bind(&Console::HandleMemset, this, _1, _2);
 }
 
     
@@ -135,21 +138,112 @@ void Console::HandleStep(std::vector<std::string> const& tokens, std::ostream& o
     out << "PC : 0x" << cpu_->PC() << endl;
 }
 
-void Console::HandleSetPC(std::vector<std::string> const& tokens, std::ostream& out) const
+void Console::HandleSetReg(std::vector<std::string> const& tokens, std::ostream& out) const
 {
-    // TODO
+    if (tokens.size() < 3)
+    {
+        out << "usage error: \"setreg <regname> <newvalue>\"" << endl;
+        return;
+    }
+    auto regname = tokens[1];
+    std::transform(regname.begin(), regname.end(), regname.begin(), ::toupper);
+    auto new_val = std::stoi(tokens[2], nullptr, 16);
+    if (regname == "PC")
+    {
+        cpu_->PC(new_val & 0xFFFF);
+    }
+    if (regname == "A")
+    {
+        cpu_->A(new_val & 0xFF);
+    }
+    if (regname == "X")
+    {
+        cpu_->X(new_val & 0xFF);
+    }
+    if (regname == "Y")
+    {
+        cpu_->Y(new_val & 0xFF);
+    }
+    if (regname == "SR")
+    {
+        cpu_->SR(new_val & 0xFF);
+    }
+    if (regname == "SP")
+    {
+        cpu_->SP(new_val & 0xFF);
+    }
 }
 
 void Console::HandleMemdump(std::vector<std::string> const& tokens, std::ostream& out) const
 {
-    // TODO
+    if (tokens.size() > 1 && tokens[1] == "?")
+    {
+        out << "memdump 0x12    # print data at address 0x12" << endl;
+        out << "memset 0x10--1f # print data at 0x10-0x1f" << endl;
+        out << "memset 0x10++10 # print data at 0x10-0x1f" << endl;
+        return;
+    }
+
+    if (tokens.size() < 2)
+    {
+        out << "usage error: \"memdump <address or range>\"" << endl;
+        return;
+    }
+    int res = 0;
+    uint16_t start_addr = 0;
+    uint16_t num_bytes = 0;
+    res = dumbnes::cpu6502::ParseAddressAndLength(
+            tokens[1], start_addr, num_bytes);
+    if (res != 0)
+    {
+        out << "usage error: \"memdump address_range\"" << endl;
+        return;
+    }
+    const size_t bytes_per_line = 8;
+    for (size_t i = 0; i < num_bytes; /*update in body*/)
+    {
+        size_t bytes_on_line = min(bytes_per_line, num_bytes - i);
+        out << hex << setw(4) << setfill('0') << (start_addr + i);
+        out << " ";
+        for (size_t b = 0; b < bytes_on_line; ++b)
+        {
+            out << " " << setw(2) << (int)(memory_->R(start_addr + i));
+            i++;
+        }
+        out << dec << endl;
+    }
 }
 
 void Console::HandleMemset(std::vector<std::string> const& tokens, std::ostream& out) const
 {
-    // TODO
-}
+    if (tokens.size() > 1 && tokens[1] == "?")
+    {
+        out << "memset 0x12 22     # set data at 0x12 to 0x22" << endl;
+        out << "memset 0x10--1f 21 # set data at 0x10-0x1f to 0x22." << endl;
+        out << "memset 0x10++10 a8 # set data at 0x10-0x1f to 0xa8." << endl;
+        return;
+    }
+    if (tokens.size() < 3)
+    {
+        out << "usage error: \"memset <address or range> <newvalue>\"" << endl;
+        return;
+    }
 
+    int res = 0;
+    uint16_t start_addr = 0;
+    uint16_t num_bytes = 0;
+    if (0 != dumbnes::cpu6502::ParseAddressAndLength(
+            tokens[1], start_addr, num_bytes))
+    {
+        out << "usage error: \"memset <address or range> <newvalue>\"" << endl;
+        return;
+    }
+    uint8_t value = uint8_t(0xFF & stoul(tokens[2], nullptr, 16));
+    for (uint16_t i = 0; i < num_bytes; ++i)
+    {
+        memory_->W(start_addr + i, value);
+    }
+}
 
 std::vector<std::string> Tokenize(std::string const& line)
 {
