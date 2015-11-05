@@ -11,13 +11,13 @@ using dumbnes::memory::IMemory;
 void Ppu::GfxThread(void)
 {
     window_->setActive(true);
-    sf::CircleShape shape(100.f, 100); // radius, pointcount
-    shape.setFillColor(sf::Color::Cyan);
+    sf::RectangleShape screen(sf::Vector2f(SCREEN_WIDTH, SCREEN_HEIGHT));
+    screen.setFillColor(sf::Color::Cyan);
 
     while (!gfx_thread_kill_ && window_->isOpen())
     {
         window_->clear();
-        window_->draw(shape);
+        window_->draw(screen);
         window_->display();
     }
 }
@@ -30,6 +30,7 @@ Ppu::Ppu(std::shared_ptr<IMemory> memory,
     , odd_frame_(false)
     , window_(window)
 {
+    window_->setSize(sf::Vector2u(SCREEN_WIDTH, SCREEN_HEIGHT));
 }
 
 void Ppu::StartGraphics(void)

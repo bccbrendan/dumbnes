@@ -26,6 +26,9 @@ private:
     std::shared_ptr<sf::RenderWindow> window_;
     bool odd_frame_;
 
+    constexpr static unsigned int SCREEN_WIDTH = 256.0;
+    constexpr static unsigned int SCREEN_HEIGHT = 240.0;
+
     void GfxThread(void);
     
 public:
