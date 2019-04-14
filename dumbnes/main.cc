@@ -6,6 +6,7 @@
 #include "dumbnes_includes.h"
 #include "cpu6502/nes_6502.h"
 #include "memory/flat_memory.h"
+#include "gui/gui_sfml.h"
 #include "ppu/ppu.h"
 #include "console/console.h"
 #include <X11/Xlib.h> // include last -- name conflict with None
@@ -23,34 +24,23 @@ int main(int argc, char* argv[])
     cpu->Reset();
 
     // construct application window
-    auto v_mode = sf::VideoMode(200, 200);
-    auto title = "DumbNes";
-    auto window = std::make_shared<sf::RenderWindow>(v_mode, title);
-    window->setActive(false);
-
+    auto gui = std::make_shared<dumbnes::gui::GuiSfml>();
+    gui->StartGraphics();
     // construct Picture Processing Unit and start render thread
-    auto ppu = std::make_shared<dumbnes::ppu::Ppu>(mem, window);
+    auto ppu = std::make_shared<dumbnes::ppu::Ppu>(mem, gui);
     ppu->Powerup();
-    ppu->StartGraphics();
 
     // start debug console
     auto console = std::make_shared<dumbnes::console::Console>(cpu, mem, ppu);
     console->StartPrompt();
 
     // handle window event loop.
-    while (window->isOpen())
+    while (gui->IsOpen())
     {
-        sf::Event event;
-        while (window->pollEvent(event))
-        {
-            if (event.type == sf::Event::Closed)
-            {
-                window->close();
-            }
-        }
+        gui->HandleEvents();
         if (!console->PromptRunning())
         {
-            window->close();
+            gui->Close();
         }
     }
 }

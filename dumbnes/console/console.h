@@ -10,6 +10,7 @@
 
 #include "memory/memory_interface.h"
 #include "cpu6502/nes_6502.h"
+#include <atomic>
 #include "ppu/ppu.h"
 
 namespace dumbnes

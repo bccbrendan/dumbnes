@@ -1,5 +1,4 @@
 #include "ppu.h"
-#include <SFML/Graphics.hpp>
 
 namespace dumbnes
 {
@@ -7,35 +6,15 @@ namespace ppu
 {
 
 using dumbnes::memory::IMemory;
+using dumbnes::gui::IGui;
 
-void Ppu::GfxThread(void)
-{
-    window_->setActive(true);
-    sf::RectangleShape screen(sf::Vector2f(SCREEN_WIDTH, SCREEN_HEIGHT));
-    screen.setFillColor(sf::Color::Cyan);
-
-    while (!gfx_thread_kill_ && window_->isOpen())
-    {
-        window_->clear();
-        window_->draw(screen);
-        window_->display();
-    }
-}
-    
+   
 Ppu::Ppu(std::shared_ptr<IMemory> memory,
-         std::shared_ptr<sf::RenderWindow> window)
-    : gfx_thread_()
-    , gfx_thread_kill_(false)
+         std::shared_ptr<IGui> gui)
+    : gui_(gui)
     , memory_(memory)
     , odd_frame_(false)
-    , window_(window)
 {
-    window_->setSize(sf::Vector2u(SCREEN_WIDTH, SCREEN_HEIGHT));
-}
-
-void Ppu::StartGraphics(void)
-{
-    gfx_thread_ = std::thread(&Ppu::GfxThread,this);
 }
 
 void Ppu::Powerup()
@@ -81,11 +60,6 @@ void Ppu::Reset()
 
 Ppu::~Ppu(void)
 {
-    gfx_thread_kill_ = true;
-    if (gfx_thread_.joinable())
-    {
-        gfx_thread_.join();
-    }
 }
 
 }

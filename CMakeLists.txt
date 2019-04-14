@@ -37,6 +37,7 @@ set (SOURCE ${SOURCE}
     ${PROJECT_SOURCE_DIR}/opcodes/op_info.cc
     ${PROJECT_SOURCE_DIR}/opcodes/opcodes.cc
     ${PROJECT_SOURCE_DIR}/ppu/ppu.cc
+    ${PROJECT_SOURCE_DIR}/gui/gui_sfml.cc
     ${PROJECT_SOURCE_DIR}/main.cc
     ${PROJECT_SOURCE_DIR}/assembler/assembler.cc
     )
