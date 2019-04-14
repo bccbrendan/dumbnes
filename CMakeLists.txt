@@ -1,11 +1,13 @@
 # based on http://www.cmake.org/cmake-tutorial/
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.5)
 project (Dumbnes)
 
-add_compile_options(-std=c++14)
+set (CMAKE_CXX_STANDARD 14)
+
 if (UNIX)
     add_compile_options(-Wextra)
 endif()
+
 
 # set up project directory structure
 set (PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}/dumbnes")
@@ -42,16 +44,33 @@ set (SOURCE ${SOURCE}
 #add the executable
 add_executable (dumbnes_emu ${SOURCE})
 
-#external libraries
-target_link_libraries(dumbnes_emu sfml-system sfml-graphics sfml-window)
-# needed to workaround multithreading rendering issue with SFML
-target_link_libraries(dumbnes_emu X11)
+################################################################################
+# Add directory containing FindSFML.cmake
+set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/;${CMAKE_MODULE_PATH}")
+find_package(SFML 2 COMPONENTS window system)
+if (SFML_FOUND)
+	include_directories(${SFML_INCLUDE_DIR})
+else()
+	set(SFML_ROOT "" CACHE PATH "SFML top-level directory")
+	message("\n-> SFML directory not found. Set SFML_ROOT to SFML's top-level path (containing \"include\" and \"lib\" directories).")
+	message("\n-> Make sure the SFML libraries with the same configuration (Release/Debug, Static/Dynamic) exist.\n")
+endif()
+
+################################################################################
+
+target_link_libraries(dumbnes_emu stdc++)
+
 # console interface
 target_link_libraries(dumbnes_emu readline)
 
 # pthreads library - seems needed on linux #TODO make platform-specific
 # http://ubuntuforums.org/showthread.php?t=2273365
 target_link_libraries(dumbnes_emu pthread)
+
+#external libraries
+target_link_libraries(dumbnes_emu sfml-system sfml-graphics sfml-window)
+# needed to workaround multithreading rendering issue with SFML
+target_link_libraries(dumbnes_emu X11)
 
 # add the install targets
 install (TARGETS dumbnes_emu DESTINATION bin)

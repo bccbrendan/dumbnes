@@ -88,22 +88,29 @@ Nes6502::DecodeAddress(const OpMode& opmode, IMemory& mem, OpResult &result)
     {
     case OpMode::Immediate:
         address = reg_pc_+1;
+	break;
     case OpMode::ZeroPage:
         address = mem[reg_pc_+1];
+	break;
     case OpMode::ZeroPageX:
         address = reg_x_ + mem[reg_pc_+1];
+	break;
     case OpMode::ZeroPageY:
         address = reg_y_ + mem[reg_pc_+1];
+	break;
     case OpMode::Absolute:
         address = (uint16_t)mem[reg_pc_+1] << 8 | mem[reg_pc_+2];
+	break;
     case OpMode::AbsoluteX:
         b1 = mem[reg_pc_+1];
         b2 = mem[reg_pc_+2];
         address = ((reg_x_ + (uint16_t)b2) << 8) | b1;
+	break;
     case OpMode::AbsoluteY:
         b1 = mem[reg_pc_+1];
         b2 = mem[reg_pc_+2];
         address = (reg_y_ + (uint16_t)b2) << 8 | b1;
+	break;
     case OpMode::Indirect:
         b1 = mem[reg_pc_+1];
         b2 = mem[reg_pc_+2];
@@ -111,16 +118,19 @@ Nes6502::DecodeAddress(const OpMode& opmode, IMemory& mem, OpResult &result)
         b1 = mem[indirect_addr16];
         b2 = mem[indirect_addr16 + 1];
         address = (uint16_t)b2 << 8 | b1;
+	break;
     case OpMode::IndirectX:
         indirect_addr8 = reg_x_ + mem[reg_pc_+1];
         b1 = mem[indirect_addr8];
         b2 = mem[indirect_addr8+1];
         address = (uint16_t)b2 << 8 | b1;
+	break;
     case OpMode::IndirectY:
         b1 = mem[reg_pc_+1];
         b2 = mem[(reg_pc_+2) & 0xFF];
         indirect_addr16 = (uint16_t)b2 << 8 | b1;
         address = (reg_y_ + indirect_addr16) & 0xFFFF;
+	break;
     default:
         address = 0x0;
     }

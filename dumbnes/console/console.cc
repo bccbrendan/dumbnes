@@ -1,6 +1,7 @@
 #include "console.h"
 #include "dumbnes_config.h"
 #include "dumbnes_includes.h"
+#include <functional>
 
 namespace dumbnes
 {

@@ -5,15 +5,28 @@ A dumb nes emulator
 
 ## cmake
 ```sh
-sudo apt-get install cmake
+sudo apt install cmake
 ```
 
 ## readline
 ```sh
-sudo apt-get install libreadline-dev
+sudo apt-get update
+sudo apt install libreadline-dev
 ```
 
 ## SFML
 ```sh
-sudo apt-get install libsfml-dev
+https://www.sfml-dev.org/tutorials/2.5/compile-with-cmake.php
+sudo apt install libsfml-dev
 ```
+
+
+## On Debian Linux, install compiler
+sudo apt install g++
+
+
+## To build:
+cmake .
+make
+
+
