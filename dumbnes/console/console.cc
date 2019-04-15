@@ -135,7 +135,7 @@ void Console::HandleRegisters(std::vector<std::string> const& tokens, std::ostre
   
 void Console::HandleStep(std::vector<std::string> const& tokens, std::ostream& out) const
 {
-    cpu_->Step();
+    cpu_->AsmStep();
     out << "PC : 0x" << cpu_->PC() << endl;
 }
 

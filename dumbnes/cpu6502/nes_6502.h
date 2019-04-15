@@ -67,7 +67,9 @@ public:
     Nes6502(const std::shared_ptr<IMemory>& memory);
     ~Nes6502(void);
     void Reset (void);
-    void Step(void);
+    size_t AsmStep(void); // return the cycles run to complete opcode
+    // non-maskable interrupt
+    void NMI(void);
 
     inline uint16_t PC(void) const {return reg_pc_;}
     inline Nes6502& PC(uint16_t new_pc) { reg_pc_ = new_pc; }
@@ -93,7 +95,7 @@ private:
             IMemory& mem,
             OpResult &result);
     bool IsBranchTaken(const OpInfo& op) const;
-    void ProcessOp(const OpInfo& op);
+    size_t ProcessOp(const OpInfo& op); // return cycles taken
 
     /* given the operation results (branches taken?)
      * compute the number of cycles the operation would have taken

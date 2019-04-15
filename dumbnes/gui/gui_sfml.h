@@ -7,6 +7,7 @@
 #define __gui_sfml_h
 #include "gui/gui.h"
 #include <atomic>
+#include <mutex>
 #include <thread>
 #include <SFML/Graphics.hpp>
 
@@ -18,7 +19,9 @@ namespace dumbnes { namespace gui {
         std::thread gfx_thread_;
         std::atomic<bool> gfx_thread_kill_;
         std::shared_ptr<sf::RenderWindow> window_;
+        std::mutex sprite_mutex_;
         sf::Texture texture_;
+        sf::Sprite sprite_;
 
       void GfxThread(void);
 

@@ -6,8 +6,9 @@
 #ifndef __ppu_h
 #define __ppu_h
 
-#include "memory/memory_interface.h"
 #include "gui/gui.h"
+#include "memory/memory_interface.h"
+#include "cpu6502/nes_6502.h"
 
 namespace dumbnes
 {
@@ -69,27 +70,43 @@ namespace dumbnes
 
         constexpr static unsigned int SCREEN_WIDTH = 256.0;
         constexpr static unsigned int SCREEN_HEIGHT = 240.0;
+        // The PPU renders 262 scanlines per frame. 
+        // Each scanline lasts for 341 PPU clock cycles 
+        // (113.667 CPU clock cycles; 1 CPU cycle = 3 PPU cycles), 
+        // with each clock cycle producing one pixel. The line numbers given here correspond to how the internal PPU frame counters count lines.
+        constexpr static unsigned int PRE_RENDER_SCANLINE = 261;
+        constexpr static unsigned int SCANLINES = 262;
+        constexpr static unsigned int PPU_CYCLES = 341;
+
 
         class Ppu
         {
             private:
                 std::shared_ptr<dumbnes::gui::IGui> gui_;
                 std::shared_ptr<dumbnes::memory::IMemory> memory_;
+                std::shared_ptr<dumbnes::cpu6502::Nes6502> cpu_;
                 bool odd_frame_;
                 // memory mapped registers
-                Ctrl _ctrl;  // $2000
-                Mask _mask;  // $2001
-                Status _status; // $2002
+                Ctrl ctrl_;  // $2000
+                Mask mask_;  // $2001
+                Status status_; // $2002
+
+                uint32_t video_buffer_[256 * 240];
+               int cycle_;
+                int scanline_;
 
 
             public:
-                Ppu(std::shared_ptr<dumbnes::memory::IMemory> memory, std::shared_ptr<dumbnes::gui::IGui> gui);
+                Ppu(std::shared_ptr<dumbnes::gui::IGui> gui,
+                    std::shared_ptr<dumbnes::memory::IMemory> memory,
+                    std::shared_ptr<dumbnes::cpu6502::Nes6502> cpu);
+                ~Ppu(void);
                 void StartGraphics(void);
                 void Powerup();
                 void Reset();
                 void Write(uint16_t address, uint8_t data);
                 uint8_t Read(uint16_t address);
-                ~Ppu(void);
+                bool Step(void);
         };
 
 

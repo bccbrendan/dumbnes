@@ -11,6 +11,9 @@ GuiSfml::GuiSfml(void)
     : gfx_thread_()
     , gfx_thread_kill_(false)
 {
+    texture_.create(ppu::SCREEN_WIDTH, ppu::SCREEN_HEIGHT);
+    sprite_.setTexture(texture_);
+
 } 
 
 GuiSfml::~GuiSfml(void) {
@@ -22,20 +25,21 @@ GuiSfml::~GuiSfml(void) {
 }
 
 void GuiSfml::UpdatePixels(uint8_t *pixels) {
+    std::unique_lock<std::mutex>(sprite_mutex_);
     texture_.update(pixels);
+    sprite_.setTexture(texture_);
+    uint32_t pixel_info = pixels[0] << 24 | pixels[1] << 16 | pixels[2] << 8 | pixels[3];
+    std::cout << "updated sprite. pixel[0]: " << std::hex << pixel_info << std::endl;
 }
 
 void GuiSfml::GfxThread(void)
 {
     window_->setActive(true);
-    texture_.create(ppu::SCREEN_WIDTH, ppu::SCREEN_HEIGHT);
-    sf::Sprite sprite;
-    sprite.setTexture(texture_);
-
     while (!gfx_thread_kill_ && window_->isOpen())
     {
         window_->clear();
-        window_->draw(sprite);
+        std::unique_lock<std::mutex>(sprite_mutex_);
+        window_->draw(sprite_);
         window_->display();
     }
 }

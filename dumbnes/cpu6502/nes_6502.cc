@@ -34,12 +34,18 @@ void Nes6502::Reset (void)
     reg_sp_ = 0xFF;
 }
 
-void Nes6502::Step(void)
+size_t Nes6502::AsmStep(void)
 {
     auto next_op = OpInfo::Decode((*memory_)[reg_pc_]);
-    std::cout << "PC[0x" << std::hex << reg_pc_ << "] "
-        << next_op << std::endl;
-    ProcessOp(next_op);
+    // std::cout << "PC[0x" << std::hex << reg_pc_ << "] "
+    //     << next_op << std::endl;
+    return ProcessOp(next_op);
+}
+
+void Nes6502::NMI(void)
+{
+    // TODO implement
+    std::cout << "NMI - TODO - implement" << std::endl;
 }
 
 uint16_t Nes6502::FetchOperand(const OpMode& opmode,
@@ -172,7 +178,7 @@ bool Nes6502::IsBranchTaken(const OpInfo& op) const
 }
  
 
-void Nes6502::ProcessOp(const OpInfo& op)
+size_t Nes6502::ProcessOp(const OpInfo& op)
 {
     // op_result tracks work-in-progress results, mainly
     // regarding branching logic.
@@ -244,8 +250,10 @@ void Nes6502::ProcessOp(const OpInfo& op)
            << std::hex << (long unsigned)op.mnemonic;
         throw std::logic_error(ss.str());
     }
-    cycles_run_ += CyclesTaken(op, op_result);
+    auto cycles_taken = CyclesTaken(op, op_result);
+    cycles_run_ += cycles_taken;
     reg_pc_ = op_result.next_pc;
+    return cycles_taken;
 }
 
 
