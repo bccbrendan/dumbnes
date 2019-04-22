@@ -14,5 +14,6 @@
 #include <regex>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include "easylogging++/easylogging++.h"
 
 #endif /* __DUMBNES_INCLUDES_H */

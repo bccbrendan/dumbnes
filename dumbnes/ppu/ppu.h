@@ -92,14 +92,15 @@ namespace dumbnes
                 Status status_; // $2002
 
                 uint32_t video_buffer_[256 * 240];
-               int cycle_;
+                int cycle_;
                 int scanline_;
 
+                void ScanLineVisible(void);
 
             public:
                 Ppu(std::shared_ptr<dumbnes::gui::IGui> gui,
-                    std::shared_ptr<dumbnes::memory::IMemory> memory,
-                    std::shared_ptr<dumbnes::cpu6502::Nes6502> cpu);
+                        std::shared_ptr<dumbnes::memory::IMemory> memory,
+                        std::shared_ptr<dumbnes::cpu6502::Nes6502> cpu);
                 ~Ppu(void);
                 void StartGraphics(void);
                 void Powerup();

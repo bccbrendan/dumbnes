@@ -168,6 +168,10 @@ OpInfo::Decode(Opcode opcode)
         {0x94, OpInfo(Mnemonic::STY, OpMode::ZeroPageX, 2, 4)},
         {0x8C, OpInfo(Mnemonic::STY, OpMode::Absolute, 3, 4)}
     };
+    if (decoder.count(opcode) == 0) {
+        LOG(WARNING) << "Unrecognized opcode: " << std::hex << int(opcode) << " treating as NOP";
+        return decoder.at(0xEA);
+    }
     return decoder.at(opcode);
 }
 

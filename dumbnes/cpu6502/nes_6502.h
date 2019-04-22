@@ -87,9 +87,13 @@ public:
 
 private:
 
-    uint16_t FetchOperand(const OpMode& opmode,
+    uint8_t FetchOperand8(const OpMode& opmode,
             IMemory& mem,
             OpResult &result);
+    uint16_t FetchOperand16(const OpMode& opmode,
+            IMemory& mem,
+            OpResult &result);
+
 
     uint16_t DecodeAddress(const OpMode& opmode,
             IMemory& mem,

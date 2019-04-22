@@ -34,12 +34,18 @@ set (SOURCE ${SOURCE}
     ${PROJECT_SOURCE_DIR}/console/console.cc
     ${PROJECT_SOURCE_DIR}/memory/memory_interface.cc
     ${PROJECT_SOURCE_DIR}/memory/flat_memory.cc
+    ${PROJECT_SOURCE_DIR}/memory/nes_memory.cc
+    ${PROJECT_SOURCE_DIR}/rom/ines_rom.cc
     ${PROJECT_SOURCE_DIR}/opcodes/op_info.cc
     ${PROJECT_SOURCE_DIR}/opcodes/opcodes.cc
     ${PROJECT_SOURCE_DIR}/ppu/ppu.cc
     ${PROJECT_SOURCE_DIR}/gui/gui_sfml.cc
+    ${PROJECT_SOURCE_DIR}/gui/gui_stub.cc
     ${PROJECT_SOURCE_DIR}/main.cc
     ${PROJECT_SOURCE_DIR}/assembler/assembler.cc
+    ${PROJECT_SOURCE_DIR}/easylogging++/easylogging++.cc
+    ${PROJECT_SOURCE_DIR}/mapper/mapper.cc
+    ${PROJECT_SOURCE_DIR}/mapper/mapper0.cc
     )
 
 #add the executable

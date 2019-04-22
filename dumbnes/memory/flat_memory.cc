@@ -25,10 +25,6 @@ void FlatMemory::DumpBlock(/*TODO*/)
 {
 }
 
-uint8_t& FlatMemory::operator[](const uint16_t addr)
-{
-    return _contents[addr];
-}
 
 void FlatMemory::W(const uint16_t addr, uint8_t data)
 {

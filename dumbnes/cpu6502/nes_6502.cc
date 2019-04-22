@@ -7,7 +7,9 @@
 /* super reference here:
  * http://homepage.ntlworld.com/cyborgsystems/CS_Main/6502/6502.htm
  */
+#include "dumbnes_includes.h"
 #include "nes_6502.h"
+
 
 namespace dumbnes { namespace cpu6502 {
 
@@ -22,7 +24,7 @@ inline static bool IsSamePage(uint16_t address_a, uint16_t address_b)
 Nes6502::Nes6502(const std::shared_ptr<IMemory>& memory)
     :memory_(memory)
 {
-    reg_sp_ = 0xFF;
+    reg_sp_ = 0xFD;
 }
 
 Nes6502::~Nes6502(void)
@@ -31,56 +33,114 @@ Nes6502::~Nes6502(void)
 
 void Nes6502::Reset (void)
 {
-    reg_sp_ = 0xFF;
+    reg_sp_ = 0xFD - 3;
+    reg_a_ = 0;
+    reg_x_ = 0;
+    reg_y_ = 0;
+    reg_pc_ = memory_->R16(0xFFFC);
 }
 
 size_t Nes6502::AsmStep(void)
 {
-    auto next_op = OpInfo::Decode((*memory_)[reg_pc_]);
-    // std::cout << "PC[0x" << std::hex << reg_pc_ << "] "
-    //     << next_op << std::endl;
+    LOG(DEBUG) << "fetching opcode from " << reg_pc_;
+    auto next_op = OpInfo::Decode(memory_->R(reg_pc_));
+    LOG(DEBUG) << std::hex << "PC[0x"  << reg_pc_ << "] " << next_op;
     return ProcessOp(next_op);
 }
 
 void Nes6502::NMI(void)
 {
+    // behavior documented here: 
+    // https://www.pagetable.com/?p=410
     // TODO implement
-    std::cout << "NMI - TODO - implement" << std::endl;
+    LOG(WARNING) << "NMI - TODO - implement";
+    // TODO push PC and P
+    reg_pc_ = memory_->R(0xFFFA) | memory_->R(0xFFFB) << 8;
 }
 
-uint16_t Nes6502::FetchOperand(const OpMode& opmode,
+uint8_t Nes6502::FetchOperand8(const OpMode& opmode,
         IMemory& mem,
         OpResult &result)
 {
     // reference: http://nesdev.com/6502.txt
     uint8_t b1 = 0;
+    uint8_t operand = 0;
     switch(opmode)
     {
+    case OpMode::Accumulator:
+        operand = reg_a_;
+        break;
     case OpMode::Immediate:
+        operand = mem.R(DecodeAddress(opmode, mem, result));
+        break;
     case OpMode::ZeroPage:
+        operand = mem.R(reg_pc_+1);
+        break;
     case OpMode::ZeroPageX:
     case OpMode::ZeroPageY:
-    case OpMode::Absolute:
+    case OpMode::Relative:
+    case OpMode::Implied: // no operand
+    case OpMode::Indirect:
+    case OpMode::Absolute: // 16-bit
     case OpMode::AbsoluteX:
     case OpMode::AbsoluteY:
-    case OpMode::Indirect:
     case OpMode::IndirectX:
     case OpMode::IndirectY:
-        return mem[DecodeAddress(opmode, mem, result)];
-    case OpMode::Accumulator:
-        return reg_a_;
-    case OpMode::Relative:
-        b1 = mem[reg_pc_+1];
-        // b1 is a signed offset to the PC of the next instruction,
-        // hence the +2.
-        return 2 + ByteNegative(b1) ? (reg_pc_ - b1) : (reg_pc_ + b1);
     default:
         throw std::logic_error("Invalid operand mode");
     }
+    LOG(DEBUG) << std::hex << "operand: 0x" << int(operand);
+    return operand;
 }
 
+uint16_t Nes6502::FetchOperand16(const OpMode& opmode,
+        IMemory& mem,
+        OpResult &result)
+{
+    // reference: http://nesdev.com/6502.txt
+    uint8_t b1 = 0;
+    uint16_t address = 0;
+    uint16_t operand = 0;
+    int8_t offset = 0;
+    switch(opmode)
+    {
+    case OpMode::Absolute:
+        operand = mem.R16(reg_pc_+1);
+        break;
+    case OpMode::Indirect:
+        operand = DecodeAddress(opmode, mem, result);
+        break;
+    case OpMode::AbsoluteX:
+    case OpMode::AbsoluteY:
+        operand = DecodeAddress(opmode, mem, result);
+        break;
+    case OpMode::ZeroPageX:
+    case OpMode::ZeroPageY:
+    case OpMode::Relative:
+        b1 = mem.R(reg_pc_+1);
+        offset = static_cast<int8_t>(b1);  // get signed version
+        // hence the +2.
+        operand = 2 + reg_pc_ + offset;
+        break;
+    case OpMode::IndirectX:
+    case OpMode::IndirectY:
+        address = DecodeAddress(opmode, mem, result);
+        operand = address;
+        break;
+    case OpMode::Accumulator:  // 8 bit
+    case OpMode::Immediate:  // 8 bit
+    case OpMode::Implied:   // no operand
+    case OpMode::ZeroPage: // 8 bit
+    default:
+        throw std::logic_error("Invalid operand mode");
+    }
+    LOG(DEBUG) << "operand: 0x" << std::hex << operand;
+    return operand;
+}
+
+
 /* Compute, load, indirectly determine, etc
- * the address of an operand, or store target. */
+ * the address of an opand, load, or store target. */
 uint16_t
 Nes6502::DecodeAddress(const OpMode& opmode, IMemory& mem, OpResult &result)
 {
@@ -88,57 +148,46 @@ Nes6502::DecodeAddress(const OpMode& opmode, IMemory& mem, OpResult &result)
     uint8_t b1 = 0x0; // 1st byte after current instruction
     uint8_t b2 = 0x0; // 2nd byte after current instruction
     uint16_t indirect_addr16 = 0x0;
-    uint16_t indirect_addr8 = 0x0;
+    uint16_t indirect_addr = 0x0;
     uint16_t address = 0;
     switch(opmode)
     {
-    case OpMode::Immediate:
-        address = reg_pc_+1;
-	break;
-    case OpMode::ZeroPage:
-        address = mem[reg_pc_+1];
-	break;
-    case OpMode::ZeroPageX:
-        address = reg_x_ + mem[reg_pc_+1];
-	break;
-    case OpMode::ZeroPageY:
-        address = reg_y_ + mem[reg_pc_+1];
-	break;
-    case OpMode::Absolute:
-        address = (uint16_t)mem[reg_pc_+1] << 8 | mem[reg_pc_+2];
-	break;
-    case OpMode::AbsoluteX:
-        b1 = mem[reg_pc_+1];
-        b2 = mem[reg_pc_+2];
-        address = ((reg_x_ + (uint16_t)b2) << 8) | b1;
-	break;
-    case OpMode::AbsoluteY:
-        b1 = mem[reg_pc_+1];
-        b2 = mem[reg_pc_+2];
-        address = (reg_y_ + (uint16_t)b2) << 8 | b1;
-	break;
-    case OpMode::Indirect:
-        b1 = mem[reg_pc_+1];
-        b2 = mem[reg_pc_+2];
-        indirect_addr16 = ((uint16_t)b2 << 8) | b1;
-        b1 = mem[indirect_addr16];
-        b2 = mem[indirect_addr16 + 1];
-        address = (uint16_t)b2 << 8 | b1;
-	break;
-    case OpMode::IndirectX:
-        indirect_addr8 = reg_x_ + mem[reg_pc_+1];
-        b1 = mem[indirect_addr8];
-        b2 = mem[indirect_addr8+1];
-        address = (uint16_t)b2 << 8 | b1;
-	break;
-    case OpMode::IndirectY:
-        b1 = mem[reg_pc_+1];
-        b2 = mem[(reg_pc_+2) & 0xFF];
-        indirect_addr16 = (uint16_t)b2 << 8 | b1;
-        address = (reg_y_ + indirect_addr16) & 0xFFFF;
-	break;
-    default:
-        address = 0x0;
+        case OpMode::Immediate:
+            address = reg_pc_+1;
+            break;
+        case OpMode::ZeroPage:
+            address = mem.R(reg_pc_+1);
+            break;
+        case OpMode::ZeroPageX:
+            address = reg_x_ + mem.R(reg_pc_+1);
+            break;
+        case OpMode::ZeroPageY:
+            address = reg_y_ + mem.R(reg_pc_+1);
+            break;
+        case OpMode::Absolute:
+            address = reg_pc_+1;
+            break;
+        case OpMode::AbsoluteX:
+            address = reg_x_ + mem.R16(reg_pc_+1);
+            break;
+        case OpMode::AbsoluteY:
+            address = reg_y_ + mem.R16(reg_pc_+1);
+            break;
+        case OpMode::Indirect:
+            indirect_addr16 = mem.R16(reg_pc_+1);
+            address = mem.R16(indirect_addr16);
+            break;
+        case OpMode::IndirectX:
+            indirect_addr = reg_x_ + mem.R(reg_pc_+1);
+            address = mem.R16(indirect_addr);
+            break;
+        case OpMode::IndirectY:
+            indirect_addr = reg_y_ + mem.R(reg_pc_+1);
+            address = mem.R16(indirect_addr);
+            break;
+        default:
+            LOG(WARNING) << "Invalid opmode";
+            address = 0x0;
     }
     result.page_crossed |= !IsSamePage(result.next_pc, address);
     return address;
@@ -253,6 +302,7 @@ size_t Nes6502::ProcessOp(const OpInfo& op)
     auto cycles_taken = CyclesTaken(op, op_result);
     cycles_run_ += cycles_taken;
     reg_pc_ = op_result.next_pc;
+    LOG(DEBUG) << "nextpc: " << std::hex << op_result.next_pc << " op.cycles_taken: " << cycles_taken;
     return cycles_taken;
 }
 
@@ -274,10 +324,8 @@ size_t Nes6502::CyclesTaken(OpInfo const& op, OpResult const& result)
 void Nes6502::HelpProcessBranch(const OpInfo& op,
         OpResult& result)
 {
-    auto operand = FetchOperand(op.mode, *memory_, result);
+    uint16_t target = FetchOperand16(op.mode, *memory_, result);
     if (result.branch_taken) {
-        int8_t branch_displacement = (int8_t)(operand & 0xFF);
-        uint16_t target = result.next_pc + branch_displacement;
         result.page_crossed |= !IsSamePage(result.next_pc, target);
         result.next_pc = target;
     }
@@ -293,14 +341,14 @@ void Nes6502::PushByte(uint8_t b)
      * (mapping to address $01FF to $0100). Conversely pulling bytes causes 
      * it to be incremented towards form $00 to $FF.
      */
-    (*memory_)[0x100 + reg_sp_] = b;
+    memory_->W(0x100 + reg_sp_, b);
     reg_sp_--;
 }
 
 uint8_t Nes6502::PopByte(void)
 {
     reg_sp_++;
-    return (*memory_)[0x100 + reg_sp_];
+    return memory_->R(0x100 + reg_sp_);
 }
 
 
@@ -312,7 +360,7 @@ void Nes6502::ProcessADC(const OpInfo& op, OpResult& result)
 {
     // TODO detect page boundary crossings!!!
     uint8_t addend = reg_a_;
-    uint8_t augend = FetchOperand(op.mode, *memory_, result);
+    uint8_t augend = FetchOperand8(op.mode, *memory_, result);
     uint16_t sum = addend + augend + (GetStatus(SR_C) ? 1 : 0);
     SetStatus(SR_V, ByteNegative(addend) != ByteNegative(sum));
     SetStatus(SR_S, ByteNegative(addend));
@@ -333,8 +381,8 @@ void Nes6502::ProcessADC(const OpInfo& op, OpResult& result)
 
 void Nes6502::ProcessAND(const OpInfo& op, OpResult& result)
 {
-    auto operand = FetchOperand(op.mode, *memory_, result);
-    auto and_result = reg_a_ & operand;
+    uint8_t operand = FetchOperand8(op.mode, *memory_, result);
+    uint8_t and_result = reg_a_ & operand;
     SetStatus(SR_S, ByteNegative(and_result));
     SetStatus(SR_Z, and_result == reg_a_);
     reg_a_ = and_result;
@@ -395,14 +443,16 @@ void Nes6502::ProcessBRK(const OpInfo& op, OpResult& result)
     uint16_t return_address = reg_pc_ + 1;
     PushByte((uint8_t)(return_address >> 8));
     PushByte((uint8_t)(return_address & 0xFF));
-    uint16_t l = (*memory_)[0xFFFF];
-    uint16_t h = (*memory_)[0xFFFF] << 8;
+    uint16_t l = memory_->R(0xFFFE);
+    uint16_t h = memory_->R(0xFFFF) << 8;
+    /// TODO set B flag
+    // TODO push P 
     result.next_pc = h | l;
 }
 
 void Nes6502::ProcessBIT(const OpInfo& op, OpResult& result)
 {
-    auto operand = FetchOperand(op.mode, *memory_, result);
+    uint8_t operand = FetchOperand8(op.mode, *memory_, result);
     SetStatus(SR_Z, operand == 0);
     SetStatus(SR_S, ByteNegative(operand));
     SetStatus(SR_V, (operand & 0x40) != 0);
@@ -431,14 +481,14 @@ void Nes6502::ProcessCMP(const OpInfo& op, OpResult& result)
     // the Carry will be set. 
     // The equal (Z) and sign (S) flags will be set based on equality
     // or lack thereof and the sign (i.e. A>=$80) of the accumulator. 
-    auto operand = FetchOperand(op.mode, *memory_, result);
+    uint8_t operand = FetchOperand8(op.mode, *memory_, result);
     SetStatus(SR_Z, (operand == reg_a_));
     SetStatus(SR_C, (reg_a_ >= operand));
     SetStatus(SR_S, ((int)reg_a_ < (int)operand));
 }
 void Nes6502::ProcessCPX(const OpInfo& op, OpResult& result)
 {
-    auto operand = FetchOperand(op.mode, *memory_, result);
+    uint8_t operand = FetchOperand8(op.mode, *memory_, result);
     SetStatus(SR_Z, (operand == reg_x_));
     SetStatus(SR_C, (reg_x_ >= operand));
     SetStatus(SR_S, ((int)reg_x_ < (int)operand));
@@ -446,7 +496,7 @@ void Nes6502::ProcessCPX(const OpInfo& op, OpResult& result)
 
 void Nes6502::ProcessCPY(const OpInfo& op, OpResult& result)
 {
-    auto operand = FetchOperand(op.mode, *memory_, result);
+    uint8_t operand = FetchOperand8(op.mode, *memory_, result);
     SetStatus(SR_Z, (operand == reg_y_));
     SetStatus(SR_C, (reg_y_ >= operand));
     SetStatus(SR_S, ((int)reg_y_ < (int)operand));
@@ -455,10 +505,10 @@ void Nes6502::ProcessCPY(const OpInfo& op, OpResult& result)
 void Nes6502::ProcessDEC(const OpInfo& op, OpResult& result)
 {
     auto target_address = DecodeAddress(op.mode, *memory_, result);
-    auto dec_result =  (*memory_)[target_address] - 1;
+    auto dec_result =  memory_->R(target_address) - 1;
     SetStatus(SR_Z, (dec_result == 0));
     SetStatus(SR_S, (ByteNegative(dec_result)));
-    (*memory_)[target_address] = dec_result;
+    memory_->W(target_address, dec_result);
 }
 
 void Nes6502::ProcessDEX(const OpInfo& op, OpResult& result)
@@ -479,8 +529,8 @@ void Nes6502::ProcessDEY(const OpInfo& op, OpResult& result)
 
 void Nes6502::ProcessEOR(const OpInfo& op, OpResult& result)
 {
-    auto operand = FetchOperand(op.mode, *memory_, result);
-    auto eor_result = reg_a_ ^ operand;
+    uint8_t operand = FetchOperand8(op.mode, *memory_, result);
+    uint8_t eor_result = reg_a_ ^ operand;
     SetStatus(SR_S, ByteNegative(eor_result));
     SetStatus(SR_Z, eor_result == reg_a_);
     reg_a_ = eor_result;
@@ -488,16 +538,16 @@ void Nes6502::ProcessEOR(const OpInfo& op, OpResult& result)
 
 void Nes6502::ProcessINC(const OpInfo& op, OpResult& result)
 {
-    auto target_address = DecodeAddress(op.mode, *memory_, result);
-    auto inc_result =  (*memory_)[target_address] + 1;
+    uint16_t target_address = DecodeAddress(op.mode, *memory_, result);
+    uint8_t inc_result =  memory_->R(target_address) + 1;
     SetStatus(SR_Z, (inc_result == 0));
     SetStatus(SR_S, (ByteNegative(inc_result)));
-    (*memory_)[target_address] = inc_result;
+    memory_->W(target_address, inc_result);
 }
 
 void Nes6502::ProcessINX(const OpInfo& op, OpResult& result)
 {
-    auto inc_result =  reg_x_ + 1;
+    uint8_t inc_result =  reg_x_ + 1;
     SetStatus(SR_Z, (inc_result == 0));
     SetStatus(SR_S, (ByteNegative(inc_result)));
     reg_x_ = inc_result;
@@ -513,22 +563,24 @@ void Nes6502::ProcessINY(const OpInfo& op, OpResult& result)
 
 void Nes6502::ProcessJMP(const OpInfo& op, OpResult& result)
 {
-    auto operand = FetchOperand(op.mode, *memory_, result);
+    uint16_t operand = FetchOperand16(op.mode, *memory_, result);
+    LOG_IF(op.mode == OpMode::Absolute, DEBUG) << "JMP $" << operand;
+    LOG_IF(op.mode == OpMode::Indirect, DEBUG) << "JMP i$" << operand;
     result.next_pc = operand;
 }
 
 void Nes6502::ProcessJSR(const OpInfo& op, OpResult& result)
 {
-    auto return_address = result.next_pc - 1;
-    PushByte((return_address & 0xF0) >> 8); // msb first
-    PushByte(return_address & 0x0F);
-    auto operand = FetchOperand(op.mode, *memory_, result);
+    uint16_t return_address = reg_pc_ + 3; // jsr is 3 bytes
+    PushByte(((return_address - 1) & 0xFF00) >> 8); // msb first
+    PushByte((return_address - 1) & 0xFF);
+    uint16_t operand = FetchOperand16(op.mode, *memory_, result);
     result.next_pc = operand;
 }
 
 void Nes6502::ProcessLDA(const OpInfo& op, OpResult& result)
 {
-    auto operand = FetchOperand(op.mode, *memory_, result);
+    uint16_t operand = FetchOperand8(op.mode, *memory_, result);
     reg_a_ = uint8_t(operand & 0xFF);
     SetStatus(SR_S, ByteNegative(reg_a_));
     SetStatus(SR_Z, reg_a_ == 0);
@@ -536,7 +588,7 @@ void Nes6502::ProcessLDA(const OpInfo& op, OpResult& result)
 
 void Nes6502::ProcessLDX(const OpInfo& op, OpResult& result)
 {
-    auto operand = FetchOperand(op.mode, *memory_, result);
+    uint8_t operand = FetchOperand8(op.mode, *memory_, result);
     reg_x_ = uint8_t(operand & 0xFF);
     SetStatus(SR_S, ByteNegative(reg_x_));
     SetStatus(SR_Z, reg_x_ == 0);
@@ -544,8 +596,8 @@ void Nes6502::ProcessLDX(const OpInfo& op, OpResult& result)
 
 void Nes6502::ProcessLDY(const OpInfo& op, OpResult& result)
 {
-    auto operand = FetchOperand(op.mode, *memory_, result);
-    reg_y_ = uint8_t(operand & 0xFF);
+    uint8_t operand = FetchOperand8(op.mode, *memory_, result);
+    reg_y_ = operand;
     SetStatus(SR_S, ByteNegative(reg_y_));
     SetStatus(SR_Z, reg_y_ == 0);
 }
@@ -565,7 +617,7 @@ void Nes6502::ProcessNOP(const OpInfo& op, OpResult& result)
 
 void Nes6502::ProcessORA(const OpInfo& op, OpResult& result)
 {
-    auto rhs = FetchOperand(op.mode, *memory_, result);
+    uint8_t rhs = FetchOperand8(op.mode, *memory_, result);
     reg_a_ = reg_a_ | rhs;
     SetStatus(SR_S, ByteNegative(reg_a_));
     SetStatus(SR_Z, reg_a_ == 0);
@@ -597,9 +649,9 @@ void Nes6502::ProcessROL(const OpInfo& op, OpResult& result)
     {
         // shift data in memory in place by accumulator.
         uint16_t target = DecodeAddress(op.mode, *memory_, result);
-        uint8_t base = (*memory_)[target];
+        uint8_t base = memory_->R(target);
         uint8_t shifted = (uint8_t)((base << 1) | GetStatus(SR_C) ? 1 : 0);
-        (*memory_)[target] = shifted;
+        memory_->W(target, shifted);
         SetStatus(SR_C, ByteNegative(base));
         SetStatus(SR_Z, shifted == 0);
         SetStatus(SR_S, ByteNegative(shifted));
@@ -622,9 +674,9 @@ void Nes6502::ProcessROR(const OpInfo& op, OpResult& result)
     {
         // shift data in memory in place by accumulator.
         uint16_t target = DecodeAddress(op.mode, *memory_, result);
-        uint8_t base = (*memory_)[target];
+        uint8_t base = memory_->R(target);
         uint8_t shifted = (uint8_t)((base >> 1) | GetStatus(SR_C) ? 0x80 : 0);
-        (*memory_)[target] = shifted;
+        memory_->W(target, shifted);
         SetStatus(SR_C, base & 0x1);
         SetStatus(SR_Z, shifted == 0);
         SetStatus(SR_S, ByteNegative(shifted));
@@ -661,7 +713,7 @@ void Nes6502::ProcessRTS(const OpInfo& op, OpResult& result)
 void Nes6502::ProcessSBC(const OpInfo& op, OpResult& result)
 {
     auto minuend = reg_a_;
-    uint8_t subtrahend = FetchOperand(op.mode, *memory_, result);
+    uint8_t subtrahend = FetchOperand8(op.mode, *memory_, result);
     int difference = 0;
     if (GetStatus(SR_D))
     {
@@ -701,20 +753,20 @@ void Nes6502::ProcessSEI(const OpInfo& op, OpResult& result)
 
 void Nes6502::ProcessSTA(const OpInfo& op, OpResult& result)
 {
-    uint16_t target = DecodeAddress(op.mode, *memory_, result);
-    (*memory_)[target] = reg_a_;
+    uint16_t target = FetchOperand16(op.mode, *memory_, result);
+    memory_->W(target, reg_a_);
 }
 
 void Nes6502::ProcessSTX(const OpInfo& op, OpResult& result)
 {
     uint16_t target = DecodeAddress(op.mode, *memory_, result);
-    (*memory_)[target] = reg_x_;
+    memory_->W(target, reg_x_);
 }
 
 void Nes6502::ProcessSTY(const OpInfo& op, OpResult& result)
 {
     uint16_t target = DecodeAddress(op.mode, *memory_, result);
-    (*memory_)[target] = reg_y_;
+    memory_->W(target, reg_y_);
 }
 
 void Nes6502::ProcessTAX(const OpInfo& op, OpResult& result)

@@ -17,9 +17,9 @@ class IMemory
 public:
     virtual void InitializeBlock(void /*TODO*/) = 0;
     virtual void DumpBlock(/*TODO*/) = 0;
-    virtual uint8_t& operator[](const uint16_t addr) = 0; 
     virtual void W(const uint16_t addr, uint8_t data) = 0;
     virtual uint8_t R(const uint16_t addr) const = 0;
+    virtual uint16_t R16(const uint16_t addr) const = 0;
 
     /*********************/
     /* PPU mapped memory */
