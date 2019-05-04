@@ -6,22 +6,28 @@ namespace dumbnes
     namespace ppu
     {
 
-        using dumbnes::memory::IMemory;
         using dumbnes::gui::IGui;
         using dumbnes::cpu6502::Nes6502;
 
 
         Ppu::Ppu(std::shared_ptr<IGui> gui,
-                std::shared_ptr<IMemory> memory,
-                std::shared_ptr<Nes6502> cpu)
-            : gui_(gui)
-              , memory_(memory)
-              , odd_frame_(false)
-              , cpu_(cpu)
-              , cycle_(0)
-              , scanline_(0)
+                std::weak_ptr<Nes6502> cpu)
+            : ctrl_(0x00)
+            , mask_(0x00)
+            , status_(0xA0)
+            , oam_addr_(0x00)
+            , address_latch_(false)
+            , ppu_scroll_(0x00)
+            , ppu_addr_(0x00)
+            , ppu_data_(0x00)
+            , odd_frame_(false)
+            , cycle_(0)
+            , scanline_(0)
+            , gui_(gui)
+            , cpu_(cpu)
         {
-            srand(time(NULL));
+            srand(time(NULL)); // TODO remove when no longer using noise image
+            std::memset(video_buffer_, 0, 256 * 240 * sizeof(uint32_t));
         }
 
         Ppu::~Ppu(void)
@@ -33,18 +39,14 @@ namespace dumbnes
             // http://wiki.nesdev.com/w/index.php/PPU_power_up_state
             //
             //
-            memory_->PPUCTRL(0x00);
             ctrl_.raw = 0x00;
-            memory_->PPUMASK(0x00);
             mask_.raw = 0x00;
             // 0xa0 from web reference '+0+x xxxx'
-            memory_->PPUSTATUS(memory_->PPUSTATUS() | 0xA0);
-            memory_->OAMADDR(0x00);
-            memory_->W(0x2005, 0x00);
-            memory_->W(0x2006, 0x00);
-            memory_->PPUSCROLL(0x00);
-            memory_->PPUADDR(0x00);
-            memory_->PPUDATA(0x00);
+            status_.raw = 0xA0;
+            oam_addr_ = 0x00;
+            ppu_scroll_ = 0x00;
+            ppu_addr_ = 0x00;
+            ppu_data_ = 0x00;
             odd_frame_ = false;
             // TODO implement OAM http://wiki.nesdev.com/w/index.php/PPU_OAM
             // OAM = pattern
@@ -57,20 +59,21 @@ namespace dumbnes
         void Ppu::Reset()
         {
             // http://wiki.nesdev.com/w/index.php/PPU_power_up_state
-            memory_->PPUCTRL(0x00);
-            memory_->PPUMASK(0x00);
-            // memory_->PPUSTATUS(U??x xxxx); 
-            // memory_->OAMADDR = unchanged
-            memory_->W(0x2005, 0x00);
-            memory_->W(0x2006, 0x00);
-            memory_->PPUSCROLL(0x00);
-            // memory_->PPUADDR(unchanged);
-            memory_->PPUDATA(0x00);
+            ctrl_.raw = 0x00;
+            mask_.raw = 0x00;
+            // 0xa0 from web reference '+0+x xxxx'
+            status_.raw = 0xA0;
+            oam_addr_ = 0x00;
+            ppu_scroll_ = 0x00;
+            ppu_addr_ = 0x00;
+            ppu_data_ = 0x00;
             odd_frame_ = false;
-            // TODO implement OAM
-            // memory_->OAM = pattern
-            // memory_->NT RAM (external, in Control Deck) = unchanged
-            // memory_->CHR RAM (external, in Game Pak) =    unchanged 
+            // TODO implement OAM http://wiki.nesdev.com/w/index.php/PPU_OAM
+            // OAM = pattern
+            // NT RAM (external, in Control Deck)     mostly $FF
+            // CHR RAM (external, in Game Pak)
+            cycle_ = 0;
+            scanline_ = 0;
         }
 
 
@@ -95,13 +98,30 @@ namespace dumbnes
             }
         }
 
+        void Ppu::SetCpu(std::weak_ptr<dumbnes::cpu6502::Nes6502> cpu) {
+            cpu_ = cpu;
+        }
+
         void Ppu::Write(uint16_t address, uint8_t data) {
             // TODO
         }
     
         uint8_t Ppu::Read(uint16_t address) {
-            // TODO
-            return 0;
+            uint8_t data = 0;
+            switch(address) {
+                case STATUS_ADDR:
+                    data = status_.raw;
+                    status_.vblank_started = 0;
+                    address_latch_ = false;
+                    break;
+                case PPU_ADDR_ADDR:
+                    data = ppu_addr_;
+                    // TODO address_latch? seems odd to read this reg
+                    break;
+                default:
+                    throw std::logic_error("not a PPU Read address!");
+            }
+            return data;
         }
  
 
@@ -134,13 +154,15 @@ namespace dumbnes
                     // of scanline 241, where the VBlank NMI also occurs.
                     // The PPU makes no memory accesses during these scanlines, 
                     // so PPU memory can be freely accessed by the program.
+                    status_.vblank_started = 1;
                     if (cycle_ == 1) {
-                        cpu_->NMI();
+                        auto cpu = cpu_.lock();
+                        cpu->SetNmiReq(true);
                     }
                     break;
                 case 261:
-
                     // TODO: pre-render scanline
+                    status_.vblank_started = 0;
                     break;
             }
             ++cycle_;

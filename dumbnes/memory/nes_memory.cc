@@ -14,12 +14,10 @@
 using namespace dumbnes::memory;
 using namespace dumbnes::rom;
 
-
-NesMemory::NesMemory(void)
-{
-}
-
-NesMemory::NesMemory(std::shared_ptr<iNesRom> rom) : rom_(rom)
+NesMemory::NesMemory(std::shared_ptr<iNesRom> rom,
+        std::shared_ptr<dumbnes::ppu::Ppu> ppu)
+    : rom_(rom)
+    , ppu_(ppu)
 {
 }
 
@@ -71,7 +69,7 @@ uint8_t NesMemory::R(const uint16_t addr) const
         // mirrors region simply map to the RAM region,
         // so mask off the unused addr bits.
         case RAM_START ... RAM_MIRRORS_END:
-            LOG(DEBUG) << "RAM[" << std::hex << (addr & RAM_END) << "] : " << ram_[addr & RAM_END];
+            LOG(DEBUG) << "RAM[" << std::hex << (addr & RAM_END) << "] : " << int(ram_[addr & RAM_END]);
             return ram_[addr & RAM_END];
         case PPU_REGISTERS_START ... PPU_REGISTERS_MIRRORS_END:
             LOG(DEBUG) << "PPU[" << std::hex << (addr & PPU_REGISTERS_END) << "]";
@@ -83,7 +81,6 @@ uint8_t NesMemory::R(const uint16_t addr) const
             LOG(WARNING) << "Read from " << addr << " detected, not supported.";
             return 0;
         case CARTRIDGE_START ... CARTRIDGE_END:
-            LOG(DEBUG) << "cartridge[" << std::hex << addr << "]";
             return rom_->Read(addr);
         default:
             LOG(ERROR) << "Read from unmapped " << addr;

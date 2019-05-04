@@ -66,7 +66,7 @@ std::unique_ptr<Mapper> Mapper::CreateMapper(const char *rom_file_path) {
             LOG(ERROR) << "error reading chr_rom data from rom file";
         }
     }
-    std::vector<char> prg_ram(0); // TODO
+    std::vector<char> prg_ram(8192); // just use 8k ram always
     LOG(DEBUG) << "Flags 7: 0x" << std::hex << int(header[7]);
     bool playchoice_10 = (header[7] & 0x2) != 0;
     LOG(DEBUG) << "playchoice 10?" << playchoice_10;

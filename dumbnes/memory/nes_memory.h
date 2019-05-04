@@ -60,9 +60,9 @@ class NesMemory : public IMemory
     std::shared_ptr<dumbnes::rom::iNesRom> rom_;
 
 public:
-    NesMemory(void);
-    NesMemory(std::shared_ptr<dumbnes::rom::iNesRom> rom);
-
+    NesMemory(void) = delete;
+    NesMemory(std::shared_ptr<dumbnes::rom::iNesRom> rom,
+            std::shared_ptr<dumbnes::ppu::Ppu> ppu);
     virtual ~NesMemory(void);
     void InitializeBlock(void /*TODO*/) override;
     virtual void DumpBlock(/*TODO*/) override;

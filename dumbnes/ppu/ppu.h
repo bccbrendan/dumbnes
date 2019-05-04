@@ -7,7 +7,6 @@
 #define __ppu_h
 
 #include "gui/gui.h"
-#include "memory/memory_interface.h"
 #include "cpu6502/nes_6502.h"
 
 namespace dumbnes
@@ -16,6 +15,7 @@ namespace dumbnes
     {
         union Ctrl
         {
+            Ctrl(uint8_t r) : raw(r) {}
             uint8_t raw;
             struct {
                 uint8_t nametable: 2; // Base nametable address (0 = $2000; 1 = $2400; 2 = $2800; 3 = $2C00)
@@ -30,6 +30,7 @@ namespace dumbnes
 
         union Mask
         {
+            Mask(uint8_t r) : raw(r) {}
             uint8_t raw;
             struct {
                 uint8_t greyscale: 1; // Greyscale (0: normal color, 1: produce a greyscale display)
@@ -42,9 +43,9 @@ namespace dumbnes
                 uint8_t emphasize_blue: 1; // Emphasize blue
             };
         };
-
         union Status
         {
+            Status(uint8_t r) : raw(r) {}
             uint8_t raw;
             struct {
                 uint8_t lsb_written_to_ppu: 5; // Least significant bits previously written into a PPU register (due to register not being updated for this address)
@@ -68,6 +69,16 @@ namespace dumbnes
             };
         };
 
+        const static uint16_t CTRL_ADDR = 0x2000;
+        const static uint16_t MASK_ADDR = 0x2001;
+        const static uint16_t STATUS_ADDR = 0x2002;
+        const static uint16_t OAM_ADDR_ADDR = 0x2003;
+        const static uint16_t OAM_DATA_ADDR = 0x2004;
+        const static uint16_t PPU_SCROLL_ADDR = 0x2005;
+        const static uint16_t PPU_ADDR_ADDR = 0x2006;
+        const static uint16_t PPU_DATA_ADDR = 0x2007;
+ 
+
         constexpr static unsigned int SCREEN_WIDTH = 256.0;
         constexpr static unsigned int SCREEN_HEIGHT = 240.0;
         // The PPU renders 262 scanlines per frame. 
@@ -82,29 +93,41 @@ namespace dumbnes
         class Ppu
         {
             private:
-                std::shared_ptr<dumbnes::gui::IGui> gui_;
-                std::shared_ptr<dumbnes::memory::IMemory> memory_;
-                std::shared_ptr<dumbnes::cpu6502::Nes6502> cpu_;
-                bool odd_frame_;
                 // memory mapped registers
+                // http://wiki.nesdev.com/w/index.php/PPU_power_up_state
                 Ctrl ctrl_;  // $2000
                 Mask mask_;  // $2001
                 Status status_; // $2002
+                uint8_t oam_addr_; // $2003
+                bool address_latch_;
+                uint8_t ppu_scroll_; // $2005
+                uint8_t ppu_addr_; // $2006
+                uint8_t ppu_data_; // $2007
+                bool odd_frame_;
+                // oam ?
+                // palette ?
+                // nt ram ?
+                // chr ram?
 
+                // emulation state
                 uint32_t video_buffer_[256 * 240];
                 int cycle_;
                 int scanline_;
+
+                // pointers to other emulator resources
+                std::shared_ptr<dumbnes::gui::IGui> gui_;
+                std::weak_ptr<dumbnes::cpu6502::Nes6502> cpu_;
 
                 void ScanLineVisible(void);
 
             public:
                 Ppu(std::shared_ptr<dumbnes::gui::IGui> gui,
-                        std::shared_ptr<dumbnes::memory::IMemory> memory,
-                        std::shared_ptr<dumbnes::cpu6502::Nes6502> cpu);
+                        std::weak_ptr<dumbnes::cpu6502::Nes6502> cpu);
                 ~Ppu(void);
                 void StartGraphics(void);
                 void Powerup();
                 void Reset();
+                void SetCpu(std::weak_ptr<dumbnes::cpu6502::Nes6502> cpu);
                 void Write(uint16_t address, uint8_t data);
                 uint8_t Read(uint16_t address);
                 bool Step(void);

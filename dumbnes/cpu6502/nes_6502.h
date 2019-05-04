@@ -63,13 +63,16 @@ protected:
 
     size_t cycles_run_; /* incremented as program runs */
 
+    bool nmi_req_;  // is an nmi requested?
+
+
 public:
     Nes6502(const std::shared_ptr<IMemory>& memory);
     ~Nes6502(void);
     void Reset (void);
+    void SetNmiReq(bool set);   // assert/deassert nmi
     size_t AsmStep(void); // return the cycles run to complete opcode
     // non-maskable interrupt
-    void NMI(void);
 
     inline uint16_t PC(void) const {return reg_pc_;}
     inline Nes6502& PC(uint16_t new_pc) { reg_pc_ = new_pc; }
@@ -107,6 +110,8 @@ private:
     size_t CyclesTaken(const OpInfo& op, const OpResult& result);
     
     Nes6502& SetStatus(uint8_t bit, bool val);
+
+    size_t NMI(void);
 
     void PushByte(uint8_t b);
     uint8_t PopByte(void);

@@ -24,6 +24,7 @@ class Mapper0 : public Mapper
 
     virtual ~Mapper0(void);
     virtual uint8_t Read(uint16_t address) override;
+    virtual void Write(uint16_t address, uint8_t data) override;
 };
 
 }}

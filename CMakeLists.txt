@@ -8,6 +8,7 @@ if (UNIX)
     add_compile_options(-Wextra)
 endif()
 
+set (CMAKE_CXX_FLAGS_DEBUG "-g")
 
 # set up project directory structure
 set (PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}/dumbnes")

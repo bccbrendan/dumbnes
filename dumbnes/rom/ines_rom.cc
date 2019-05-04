@@ -15,7 +15,7 @@ iNesRom::~iNesRom(void) {
 
 void iNesRom::Write(uint16_t address, uint8_t data)
 {
-    // TODO
+    return mapper_->Write(address, data);
 }
 
 uint8_t iNesRom::Read(uint16_t address)

@@ -25,20 +25,16 @@ int main(int argc, char* argv[])
         std::cout << "usage: dumbnes_emu <rom_file>" << std::endl;
         return 1;
     }
+
     auto rom = std::make_shared<dumbnes::rom::iNesRom>(argv[1]);
     LOG(INFO) << "Loaded Rom file!";
+
     // apparently XInitThreads is needed with SFML if rendering is 
     // done in a background thread.
     // http://en.sfml-dev.org/forums/index.php?topic=16882.0
     // TODO make portable - X11 might not be as available on windows.
     XInitThreads();
 
-    auto mem = std::make_shared<dumbnes::memory::NesMemory>(rom);
-
-    auto cpu = std::make_shared<dumbnes::cpu6502::Nes6502>(mem);
-    cpu->Reset();
-
-    LOG(INFO) << "Initialized memory";
     // construct application window
     // TODO fix X11 issues
     // auto gui = std::make_shared<dumbnes::gui::GuiSfml>();
@@ -46,18 +42,30 @@ int main(int argc, char* argv[])
     LOG(INFO) << "constructed GUI";
     gui->StartGraphics();
     LOG(INFO) << "Started graphics";
+
     // construct Picture Processing Unit and start render thread
-    auto ppu = std::make_shared<dumbnes::ppu::Ppu>(gui, mem, cpu);
+    std::weak_ptr<dumbnes::cpu6502::Nes6502> placeholder_cpu;
+
+    auto ppu = std::make_shared<dumbnes::ppu::Ppu>(gui, placeholder_cpu);
+
+    auto mem = std::make_shared<dumbnes::memory::NesMemory>(rom, ppu);
+    LOG(INFO) << "Initialized memory";
+
+    auto cpu = std::make_shared<dumbnes::cpu6502::Nes6502>(mem);
+
+    ppu->SetCpu(cpu);
+    cpu->Reset();
     ppu->Powerup();
 
     // start debug console
     auto console = std::make_shared<dumbnes::console::Console>(cpu, mem, ppu);
-    console->StartPrompt();
+    // TODO optionally enable?
+    //console->StartPrompt();
     LOG(INFO) << "Started prompt";
 
     float target_fps = 60.0;
     auto target_frame_duration = std::chrono::duration<double, std::milli>(1000.0 / target_fps);
-    int steps_to_take = 10000;
+    int steps_to_take = 100000;
     // handle window event loop.
     while (gui->IsOpen() && (steps_to_take > 0))
     {

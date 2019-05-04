@@ -1,0 +1,31 @@
+todo- download https://github.com/christopherpow/nes-test-roms.git
+run nes_inst_tests/01 ...
+
+debug against this reverse-engineered symbol table
+
+addresses:
+
+from ~/code/nes-test-roms/nes_instr_test/source/common/shell.rs
+; Initializes shell
+init_shell:
+	jsr clear_ram
+	jsr init_wait_vbl     ; waits for VBL once here,
+	jsr wait_vbl_optional ; so only need to wait once more
+	jsr init_text_out  -> 0xe618
+	jsr init_testing
+	jsr init_runtime
+	jsr console_init
+	rts
+
+
+
+0xe618: init_text_out (text_out.s)
+
+
+
+
+
+STA is storing to the wrong place
+
+
+TODO - implement Mapper0::Write?

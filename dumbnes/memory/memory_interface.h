@@ -14,7 +14,10 @@ namespace dumbnes { namespace memory {
 
 class IMemory
 {
+protected:
+    IMemory(void) {};
 public:
+    virtual ~IMemory(void) {}
     virtual void InitializeBlock(void /*TODO*/) = 0;
     virtual void DumpBlock(/*TODO*/) = 0;
     virtual void W(const uint16_t addr, uint8_t data) = 0;
