@@ -260,7 +260,7 @@ bool Nes6502::IsBranchTaken(const OpInfo& op) const
     }
     return taken;
 }
- 
+
 
 size_t Nes6502::ProcessOp(const OpInfo& op)
 {
@@ -483,7 +483,7 @@ void Nes6502::ProcessBRK(const OpInfo& op, OpResult& result)
     uint16_t l = memory_->R(0xFFFE);
     uint16_t h = memory_->R(0xFFFF) << 8;
     /// TODO set B flag
-    // TODO push P 
+    // TODO push P
     result.next_pc = h | l;
 }
 

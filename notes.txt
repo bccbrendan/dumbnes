@@ -12,20 +12,41 @@ init_shell:
 	jsr init_wait_vbl     ; waits for VBL once here,
 	jsr wait_vbl_optional ; so only need to wait once more
 	jsr init_text_out  -> 0xe618
-	jsr init_testing
+	jsr init_testing ->  0xe477
 	jsr init_runtime
 	jsr console_init
 	rts
 
 
 
-0xe618: init_text_out (text_out.s)
+0xe618: init_text_out (text_out.s) - seems to work
+0xe477: init_testing -> jumps to init_crc -> jumps to reset_crc
+0xe418: init_crc -> jumps to reset_crc
+0xe41b: reset_crc -> RTS to init_shell
+exe830: init_runtime - RTS immediately
+0xe4fe: console_init -> jmp to console_clear_line_ (ASSUMING USING console.s)
+0xe5c2: console_clear_line_0xe5c2 -> RTS to init_shell
 
+after init_shell returns, we hit a 'PHA' instruction
+because after init_shell, we're in run_shell
 
+0xe68c: run_shell's set_test command
+0xe471: set_test_ 
+0xe41b: reset_crc, return to run_shell
+0xe6b1: run_main
+0xe781: disable_rendering
+0xe78a: PLA in disable rendering
 
+0xe7b6: clear_palette
+0xe7cd: clear_oam
+0xe7cf: fill_oam
+0xe78c: clear_nametable
+0xe79a: fill_screen
+0xe0c8: main       
+0xe001: init_crc_fast
+0xe42e: update_crc_
+0xe45e: update_crc_off
+0xe025: BNE in init_crc_fast
 
+spending a long long time in init_crc_fast. - 6679 iterations of the 'BNE' there. then again, it loops while x != 0, so should do 65k iterations?
 
-STA is storing to the wrong place
-
-
-TODO - implement Mapper0::Write?

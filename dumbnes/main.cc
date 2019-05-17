@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
 
     float target_fps = 60.0;
     auto target_frame_duration = std::chrono::duration<double, std::milli>(1000.0 / target_fps);
-    int steps_to_take = 100000;
+    int steps_to_take = 10000000;
     // handle window event loop.
     while (gui->IsOpen() && (steps_to_take > 0))
     {
